@@ -1,0 +1,57 @@
+{
+  "device":  ["cuda"],
+  "optimizer": [
+    {
+      "name": ["SGD"],
+      "lr": [
+        {
+          "PennTreebank": [20]
+        }
+      ],
+      "gradient_clip": [0.25],
+      "weight_decay": [1.2e-6],
+      "nonmono": [5],
+      "alpha": [2],
+      "beta": [1]
+    }
+  ],
+  "batch_size": [12],
+  "small_batch_size": [12],
+  "bptt_len": [70],
+  "bptt_len_delta": [40],
+  "train_epochs": [800],
+  "dropout_emb": [0.1],
+  "dropout_in": [0.4],
+  "dropout_we": [0.5],
+  "dropout_hd": [0.225],
+  "dropout_out": [0.4],
+  "dropout_lt": [0.29],
+  "embedding": [
+    {
+      "size": [280],
+      "shared_embedding": [true]
+    }
+  ],
+  "GVF_discounts": [
+    {
+      "PennTreebank": [-1]
+    }
+  ],
+  "gamma": [0.5],
+  "rnn": [
+    {
+      "type": ["LSTM"],
+      "num_experts": [15],
+      "hidden_size": [960],
+      "hidden_last": [620],
+      "num_layers": [3]
+    }
+  ],
+  "mlp": [[]],
+  "hidden_activation": ["ReLU"],
+  "output_activation": ["None"],
+  "layer_select": [1],
+  "seed": [395512, 20558, 618686, 195986, 935939],
+  "show_tb": [false],
+  "generate_random_seed": [false]
+}
