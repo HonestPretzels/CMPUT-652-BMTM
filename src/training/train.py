@@ -45,9 +45,9 @@ def getDataSet(p):
     Open the files at the path and load the data
     TODO: Enable loading separate files for train and validation
     TODO: Decide how to handle sentence breaks
-    TODO: Enable cross validation splits with some sort of offset marker
     TODO: Convert to word vectors
     TODO: Apply normalization to all data
+    TODO: Enable cross validation splits with some sort of offset marker
     '''
     training = []
     validation = []
@@ -129,7 +129,13 @@ def main():
         if doTune:
             print("Hyper Parameter Tuning Enabled")
 
-    xTrain, xValid, yTrain, yValid= getDataSet(dataPath)
+    trainData, validData = getDataSet(dataPath)
+
+    if doTune:
+        # Set to 5 epochs to allow for quick grid search, do 5 epochs per hyperParameter set
+        tuneHyperParameters(model, trainData, validData, hyperParameterPath, 5)
+    else:
+        trainModel(model, trainData, validData, checkpointPath, 50)
 
 
 if __name__ == "__main__":
