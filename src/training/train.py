@@ -2,6 +2,8 @@ import sys
 from models.CLModel import CL_Model 
 from models.SimplePOSModel import POS_Model 
 from models.SimpleLMModel import LM_Model 
+from consts import sentence_max_length, POS_space_length
+from keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import os
 import csv
@@ -13,20 +15,25 @@ def getModel(modelType):
     '''
     Select and return model based on model type
     '''
-    
-    pass
+    if modelType == '--CL':
+        return CL_Model()
+    elif modelType == '--LM':
+        return LM_Model()
+    else:
+        return POS_Model()
 
-def initializeModel(model, checkpoint):
+def to_categorical(sequences, categories):
     '''
-    If the model has been pretrained load those weights in
+    One-hotify a sequence. Taken from here: https://nlpforhackers.io/lstm-pos-tagger-keras/
     '''
-    pass
-
-def trainModel(model, trainingData, validationData, checkPointPath, numEpochs):
-    '''
-    Train the model and save the weights to the checkpointPath
-    '''
-    pass
+    cat_sequences = []
+    for s in sequences:
+        cats = []
+        for item in s:
+            cats.append(np.zeros(categories))
+            cats[-1][item] = 1.0
+        cat_sequences.append(cats)
+    return np.array(cat_sequences)
 
 def tuneHyperParameters(model, trainingData, validationData, outputPath, numEpochs):
     '''
@@ -40,17 +47,33 @@ def setHyperParameters(model, configPath):
     '''
     pass
 
+def vectorize(sequence, POS=False):
+    '''
+    TODO: Make sure this includes harry potter data
+    Taking a sequence of words or tags, return a N*d np array of one-hot vectors
+    where N is the number of items in the list and d is the length of the
+    vector space
+    '''
+    if POS:
+        with open('./Data/Penn/label_dict.txt', 'r') as f:
+            lines = f.readlines()
+            tags = [line.split(':')[0] for line in lines]
+    else:
+        with open('./Data/Penn/word_dict.txt', 'r') as f:
+            lines = f.readlines()
+            tags = [line.split(':')[0] for line in lines]
+    intSequences = []
+    for i in range(len(sequence)):
+        intSequences.append([tags.index(item) for item in sequence[i]])
+    return pad_sequences(intSequences, maxlen=sentence_max_length, padding="post")
+
 def getDataSet(p):
     '''
     Open the files at the path and load the data
     TODO: Enable loading separate files for train and validation
     TODO: Decide how to handle sentence breaks
-    TODO: Convert to word vectors
-    TODO: Apply normalization to all data
-    TODO: Enable cross validation splits with some sort of offset marker
+    TODO: MAKE HARRY POTTER DATA WORK
     '''
-    training = []
-    validation = []
     extension = os.path.splitext(p)[1]
     if extension == ".csv":
         x = []
@@ -65,28 +88,33 @@ def getDataSet(p):
         x = []
         y = []
         with open(p, "r") as f:
+            currX = []
+            currY = []
             for line in f:
                 if line == "\n":
+                    x.append(currX)
+                    y.append(currY)
+                    currX = []
+                    currY = []
                     continue
                 a = line.split(' ')[0].strip()
                 b = line.split(' ')[1].strip()
-                x.append(a)
-                y.append(b)
+                currX.append(a)
+                currY.append(b)
     else:
         print("ERROR: Unknown file type for dataset. Please use txt or csv files")
         exit(1)
 
-    print(y)
+    x = vectorize(x)
+    y = vectorize(y, POS=True)
 
-    xTrain = x[:len(x)*0.9]
-    yTrain = y[:len(y)*0.9]
-    xValid = x[len(x)*0.9:]
-    yValid = y[len(y)*0.9:]
-    trainSet = [(xTrain[i], yTrain[i]) for i in range(len(xTrain))]
-    validSet = [(xValid[i], yValid[i]) for i in range(len(xValid))]
+    xTrain = x[:round(len(x)*0.9)]
+    yTrain = y[:round(len(y)*0.9)]
+    xValid = x[round(len(x)*0.9):]
+    yValid = y[round(len(y)*0.9):]
 
 
-    return trainSet, validSet
+    return xTrain, yTrain, xValid, yValid
 
 def main():
     '''
@@ -111,10 +139,13 @@ def main():
         print("ERROR: Please Select a Valid Model Type")
         exit(1)
 
+    #TODO: Enable cross validation splits
+    xTrain, yTrain, xValid, yValid = getDataSet(dataPath)
+
     model = getModel(modelType)
     if os.path.isdir(checkpointPath):
         if bool(os.listdir(checkpointPath)):
-            initializeModel(model, checkpointPath)
+            model.loadCheckpoint(checkpointPath)
     else:
         os.mkdir(checkpointPath)
 
@@ -128,14 +159,14 @@ def main():
         doTune = (sys.argv[5] == "--Tune")
         if doTune:
             print("Hyper Parameter Tuning Enabled")
+    
+    model.train(xTrain, to_categorical(yTrain, POS_space_length))
 
-    trainData, validData = getDataSet(dataPath)
-
-    if doTune:
-        # Set to 5 epochs to allow for quick grid search, do 5 epochs per hyperParameter set
-        tuneHyperParameters(model, trainData, validData, hyperParameterPath, 5)
-    else:
-        trainModel(model, trainData, validData, checkpointPath, 50)
+    # if doTune:
+    #     # Set to 5 epochs to allow for quick grid search, do 5 epochs per hyperParameter set
+    #     tuneHyperParameters(model, trainData, validData, hyperParameterPath, 5)
+    # else:
+    #     trainModel(model, trainData, validData, checkpointPath, 50)
 
 
 if __name__ == "__main__":

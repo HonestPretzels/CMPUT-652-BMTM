@@ -8,3 +8,7 @@ class LM_Model:
     def initModel(self):
         model = None
         # TODO: Keras stuff to create the model
+    
+    def loadCheckpoint(self, checkpoint):
+        # TODO: Load a checkpoint into the model
+        pass

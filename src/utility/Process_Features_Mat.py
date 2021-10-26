@@ -26,7 +26,6 @@ def main():
         POS_types.append(pos[0])
     
     features = mat["features"][0][8][2]
-
     out = []
 
     with open(wordsfile, 'r') as wf:
