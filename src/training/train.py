@@ -71,7 +71,6 @@ def getDataSet(p):
     '''
     Open the files at the path and load the data
     TODO: Enable loading separate files for train and validation
-    TODO: Decide how to handle sentence breaks
     TODO: MAKE HARRY POTTER DATA WORK
     '''
     extension = os.path.splitext(p)[1]
@@ -154,7 +153,7 @@ def main():
         setHyperParameters(model, hyperParameterPath)
         print("Hyper Parameters set based on %s"%hyperParameterPath)
 
-
+    doTune = False
     if len(sys.argv) > 5:
         doTune = (sys.argv[5] == "--Tune")
         if doTune:
