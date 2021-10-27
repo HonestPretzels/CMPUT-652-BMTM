@@ -35,7 +35,7 @@ def to_categorical(sequences, categories):
         cat_sequences.append(cats)
     return np.array(cat_sequences)
 
-def tuneHyperParameters(model, trainingData, validationData, outputPath, numEpochs):
+def tuneHyperParameters(model, trainX, trainY):
     '''
     Do some form of hyper parameter tuning here and output a JSON to the outputPath
     '''
@@ -49,7 +49,7 @@ def setHyperParameters(model, configPath):
 
 def vectorize(sequence, POS=False):
     '''
-    TODO: Make sure this includes harry potter data
+    TODO: Make sure this includes harry potter data (for maxlen, and for datasets)
     Taking a sequence of words or tags, return a N*d np array of one-hot vectors
     where N is the number of items in the list and d is the length of the
     vector space
@@ -140,7 +140,7 @@ def main():
         exit(1)
 
     #TODO: Enable cross validation splits
-    xTrain, yTrain, xValid, yValid = getDataSet(dataPath)
+    xTrain, yTrain, xTest, yTest = getDataSet(dataPath)
 
     model = getModel(modelType)
     if os.path.isdir(checkpointPath):
@@ -160,13 +160,12 @@ def main():
         if doTune:
             print("Hyper Parameter Tuning Enabled")
     
-    model.train(xTrain, to_categorical(yTrain, POS_space_length))
 
-    # if doTune:
-    #     # Set to 5 epochs to allow for quick grid search, do 5 epochs per hyperParameter set
-    #     tuneHyperParameters(model, trainData, validData, hyperParameterPath, 5)
-    # else:
-    #     trainModel(model, trainData, validData, checkpointPath, 50)
+    if doTune:
+        # Set to 5 epochs to allow for quick grid search, do 5 epochs per hyperParameter set
+        tuneHyperParameters(model, xTrain, yTrain, hyperParameterPath, 5)
+    else:
+        model.train(xTrain, to_categorical(yTrain, POS_space_length))
 
 
 if __name__ == "__main__":

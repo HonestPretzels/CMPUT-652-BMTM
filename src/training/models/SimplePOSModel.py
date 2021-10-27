@@ -30,11 +30,25 @@ class POS_Model:
         self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
         self.model.summary()
 
+    def loadHyperParameters(self, config_dict):
+        # TODO: Load the hyper parameters
+        pass
+
     def loadCheckpoint(self, checkpoint):
         # TODO: Load a checkpoint into the model
         pass
 
+    def saveCheckpoint(self, checkpoint):
+        # TODO: Save a checkpoint
+        pass
+
     def train(self, trainX, trainY):
         self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs, validation_split=self.validation_split)
+    
+    def test(self, testX, testY, checkpoint=None):
+        if checkpoint:
+            self.loadCheckpoint(checkpoint)
+        # TODO: Implement test code
+        pass
 
     
