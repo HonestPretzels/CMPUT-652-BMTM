@@ -7,7 +7,7 @@ from keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import os
 import csv
-import string
+import json
 import re
 
 # If you get an error that models are not included, run this script from the training directory
@@ -46,7 +46,9 @@ def setHyperParameters(model, configPath):
     '''
     Set the hyper parameters of the model
     '''
-    pass
+    with open(configPath, 'r') as f:
+        configDict = json.loads(f)
+        model.loadHyperParameters(configDict)
 
 def vectorize(sequence, dataFile):
     '''

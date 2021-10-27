@@ -35,8 +35,12 @@ class POS_Model:
         self.model.summary()
 
     def loadHyperParameters(self, config_dict):
-        # TODO: Load the hyper parameters
-        pass
+        for key in config_dict:
+            try:
+                getattr(self, key)
+                setattr(self, key, config_dict[key])
+            except:
+                continue
 
     def loadCheckpoint(self, checkpoint):
         print('Loading Checkpoint: %s'%checkpoint)

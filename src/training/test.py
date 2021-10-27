@@ -13,8 +13,10 @@ def main():
     xTest, yTest, _, _ = getDataSet(dataPath, wordPath, posPath)
 
     model = getModel(modelType)
-    model.loadCheckpoint(checkpointPath)
-    model.test(xTest, to_categorical(yTest, POS_space_length))
+    hyp_dict = {"batch_size": 48, "oogaBooga":"ahhhhhh"}
+    model.loadHyperParameters(hyp_dict)
+    # model.loadCheckpoint(checkpointPath)
+    # model.test(xTest, to_categorical(yTest, POS_space_length))
 
 if __name__ == "__main__":
     main()
