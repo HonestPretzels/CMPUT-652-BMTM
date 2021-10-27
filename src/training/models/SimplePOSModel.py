@@ -31,7 +31,7 @@ class POS_Model:
         self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout, return_sequences=True)))
         self.model.add(TimeDistributed(Dense(self.POS_space)))
         self.model.add(Activation('softmax'))
-        self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
+        self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy', 'precision', 'recall'])
         self.model.summary()
 
     def loadHyperParameters(self, config_dict):
@@ -48,10 +48,8 @@ class POS_Model:
     def train(self, trainX, trainY):
         self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs, validation_split=self.validation_split)
     
-    def test(self, testX, testY, checkpoint=None):
-        if checkpoint:
-            self.loadCheckpoint(checkpoint)
-        # TODO: Implement test code
-        pass
+    def test(self, testX, testY):
+        self.model.evaluate(testX, testY, batch_size=self.batch_size)
+        # TODO: Fix metrics to show more than just accuracy
 
     

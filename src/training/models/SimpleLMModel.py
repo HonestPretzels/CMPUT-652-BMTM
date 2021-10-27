@@ -32,8 +32,7 @@ class LM_Model:
     def train(self, trainX, trainY):
         self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs, validation_split=self.validation_split)
     
-    def test(self, testX, testY, checkpoint=None):
-        if checkpoint:
-            self.loadCheckpoint(checkpoint)
-        # TODO: Implement test code
-        pass
+    def test(self, testX, testY):
+        pred = self.model.predict(testX)
+
+        # TODO: Implement metrics
