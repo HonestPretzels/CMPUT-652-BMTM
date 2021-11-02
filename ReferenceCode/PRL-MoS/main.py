@@ -37,7 +37,8 @@ def main(argv):
   else:
     sweeper = Sweeper(args.config_file)
     cfg = sweeper.generate_config_for_idx(args.config_idx)
-    # Set experiment name and log paths 
+
+    # Set experiment name and log paths
     cfg['exp'] = args.config_file.split('/')[-1].split('.')[0]
     if len(args.slurm_dir) > 0:  
       cfg['logs_dir'] = f"{args.slurm_dir}/{cfg['exp']}/{cfg['config_idx']}/"
@@ -47,6 +48,7 @@ def main(argv):
     make_dir(f"./logs/{cfg['exp']}/{cfg['config_idx']}/")
     cfg_path = cfg['logs_dir'] + 'config.json'
     cfg['cfg_path'] = cfg_path
+
     # Set tasks
     cfg['tasks'] = [task for task in cfg['GVF_discounts']]
     for i in range(len(cfg['tasks'])):

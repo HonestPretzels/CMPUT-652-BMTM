@@ -1,5 +1,5 @@
 import sys
-from models.CLModel import CL_Model 
+from models.POSLMModel import POSLM_Model
 from models.SimplePOSModel import POS_Model 
 from models.SimpleLMModel import LM_Model 
 from consts import sentence_max_length, POS_space_length
@@ -22,6 +22,8 @@ def getModel(modelType):
     else:
         return POS_Model()
 
+# Are we sure we need this? keras has a to_categorical function:
+# https://www.tensorflow.org/api_docs/python/tf/keras/utils/to_categorical
 def to_categorical(sequences, categories):
     '''
     One-hotify a sequence. Taken from here: https://nlpforhackers.io/lstm-pos-tagger-keras/
@@ -120,7 +122,7 @@ def main():
     Called with command line arguments:
         1. The path to the dataset to be trained on. Will be split into train and test batch
         2. The path to the checkpoint directory
-        3. The type of model to be trained (--POS, --LM, --CL)
+        3. The type of model to be trained (--POS, --LM, --POSLM)
         4. The hyperparameter config file
         4. if "--Tune" will do hyperparameter tuning
 
@@ -131,9 +133,9 @@ def main():
     if modelType == "--POS":
         print("Simple POS Model Selected")
     elif modelType == "--LM":
-        print("Simple Language Model Seleceted")
+        print("Simple Language Model Selected")
     elif modelType == "--CL":
-        print("Continuous Learning Model Selected")
+        print("POS + LM Model Selected")
     else:
         print("ERROR: Please Select a Valid Model Type")
         exit(1)
