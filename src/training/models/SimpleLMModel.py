@@ -1,6 +1,6 @@
 # TODO: identify the vocab length, add it into the consts script, then here
 from consts import word_space_length, sentence_max_length # , vocab_length
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, InputLayer, Bidirectional,  TimeDistributed, Embedding, Activation
 
 
@@ -31,7 +31,7 @@ class LM_Model:
         self.model.add(Bidirectional(LSTM(380, return_sequences=True)))
 
         # TODO: ensure vocab_length is imported into this file
-        self.model.add(TimeDistributed(Dense(vocab_length)))
+        self.model.add(TimeDistributed(Dense(word_space_length)))
         self.model.add(Activation('softmax'))
 
         # TODO: Add the perplexity metric - should we do this using a package or write the fcn. ourselves?
@@ -55,19 +55,9 @@ class LM_Model:
         self.model.save(checkpoint)
 
     def train(self, trainX, trainY):
-<<<<<<< HEAD
         self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs,
                        validation_split=self.validation_split)
-
-    def test(self, testX, testY, checkpoint=None):
-        if checkpoint:
-            self.loadCheckpoint(checkpoint)
-        # TODO: Implement test code
-        pass
-=======
-        self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs, validation_split=self.validation_split)
     
     def test(self, testX, testY):
         self.model.evaluate(testX, testY, batch_size=self.batch_size)
         # TODO: Fix metrics to show more than just accuracy
->>>>>>> origin/HarryPotterData
