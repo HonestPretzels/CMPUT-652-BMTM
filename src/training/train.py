@@ -8,6 +8,7 @@ import numpy as np
 import os
 import csv
 import json
+import re
 
 # If you get an error that models are not included, run this script from the training directory
 
@@ -47,29 +48,26 @@ def setHyperParameters(model, configPath):
     '''
     Set the hyper parameters of the model
     '''
-    pass
+    with open(configPath, 'r') as f:
+        configDict = json.loads(f)
+        model.loadHyperParameters(configDict)
 
-def vectorize(sequence, POS=False):
+def vectorize(sequence, dataFile):
     '''
-    TODO: Make sure this includes harry potter data (for maxlen, and for datasets)
     Taking a sequence of words or tags, return a N*d np array of one-hot vectors
     where N is the number of items in the list and d is the length of the
     vector space
     '''
-    if POS:
-        with open('./Data/Penn/label_dict.txt', 'r') as f:
-            lines = f.readlines()
-            tags = [line.split(':')[0] for line in lines]
-    else:
-        with open('./Data/Penn/word_dict.txt', 'r') as f:
-            lines = f.readlines()
-            tags = [line.split(':')[0] for line in lines]
+    with open(dataFile, 'r') as f:
+        lines = f.readlines()
+        tags = [line.split(':')[0] for line in lines]
     intSequences = []
+    
     for i in range(len(sequence)):
-        intSequences.append([tags.index(item) for item in sequence[i]])
+        intSequences.append([tags.index(re.sub(r'[^\w\s]', '', item)) for item in sequence[i]])
     return pad_sequences(intSequences, maxlen=sentence_max_length, padding="post")
 
-def getDataSet(p):
+def getDataSet(p, wp, posp):
     '''
     Open the files at the path and load the data
     TODO: Enable loading separate files for train and validation
@@ -80,10 +78,17 @@ def getDataSet(p):
         x = []
         y = []
         with open(p, "r", newline="") as f:
+            currX = []
+            currY = []
             reader = csv.reader(f)
             for line in reader:
-                x.append(line[0])
-                y.append(line[1])
+                if len(currX) == 4:
+                    x.append(currX)
+                    y.append(currY)
+                    currX = []
+                    currY = []
+                currX.append(line[0])
+                currY.append(line[1])
 
     elif extension == ".txt":
         x = []
@@ -98,6 +103,12 @@ def getDataSet(p):
                     currX = []
                     currY = []
                     continue
+                if len(currX) == 4:
+                    x.append(currX)
+                    y.append(currY)
+                    currX = []
+                    currY = []
+                    
                 a = line.split(' ')[0].strip()
                 b = line.split(' ')[1].strip()
                 currX.append(a)
@@ -106,8 +117,8 @@ def getDataSet(p):
         print("ERROR: Unknown file type for dataset. Please use txt or csv files")
         exit(1)
 
-    x = vectorize(x)
-    y = vectorize(y, POS=True)
+    x = vectorize(x, wp)
+    y = vectorize(y, posp)
 
     xTrain = x[:round(len(x)*0.9)]
     yTrain = y[:round(len(y)*0.9)]
@@ -130,6 +141,8 @@ def main():
     dataPath = sys.argv[1]
     checkpointPath = sys.argv[2]
     modelType = sys.argv[3]
+    wordPath = sys.argv[4]
+    posPath = sys.argv[5]
     if modelType == "--POS":
         print("Simple POS Model Selected")
     elif modelType == "--LM":
@@ -141,7 +154,7 @@ def main():
         exit(1)
 
     #TODO: Enable cross validation splits
-    xTrain, yTrain, xTest, yTest = getDataSet(dataPath)
+    xTrain, yTrain, xTest, yTest = getDataSet(dataPath, wordPath, posPath)
 
     model = getModel(modelType)
     if os.path.isdir(checkpointPath):
@@ -150,14 +163,14 @@ def main():
     else:
         os.mkdir(checkpointPath)
 
-    if len(sys.argv) > 4:
-        hyperParameterPath = sys.argv[4]
+    if len(sys.argv) > 6:
+        hyperParameterPath = sys.argv[6]
         setHyperParameters(model, hyperParameterPath)
         print("Hyper Parameters set based on %s"%hyperParameterPath)
 
     doTune = False
-    if len(sys.argv) > 5:
-        doTune = (sys.argv[5] == "--Tune")
+    if len(sys.argv) > 7:
+        doTune = (sys.argv[7] == "--Tune")
         if doTune:
             print("Hyper Parameter Tuning Enabled")
     
@@ -167,6 +180,7 @@ def main():
         tuneHyperParameters(model, xTrain, yTrain, hyperParameterPath, 5)
     else:
         model.train(xTrain, to_categorical(yTrain, POS_space_length))
+        model.saveCheckpoint(checkpointPath)
 
 
 if __name__ == "__main__":

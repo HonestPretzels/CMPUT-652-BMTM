@@ -40,18 +40,22 @@ class LM_Model:
         self.model.summary()
 
     def loadHyperParameters(self, config_dict):
-        # TODO: Load the hyper parameters
-        pass
+        for key in config_dict:
+            try:
+                getattr(self, key)
+                setattr(self, key, config_dict[key])
+            except:
+                continue
 
     def loadCheckpoint(self, checkpoint):
-        # TODO: Load a checkpoint into the model
-        pass
+        print('Loading Checkpoint: %s'%checkpoint)
+        self.model = load_model(checkpoint)
 
     def saveCheckpoint(self, checkpoint):
-        # TODO: Save a checkpoint
-        pass
+        self.model.save(checkpoint)
 
     def train(self, trainX, trainY):
+<<<<<<< HEAD
         self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs,
                        validation_split=self.validation_split)
 
@@ -60,3 +64,10 @@ class LM_Model:
             self.loadCheckpoint(checkpoint)
         # TODO: Implement test code
         pass
+=======
+        self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs, validation_split=self.validation_split)
+    
+    def test(self, testX, testY):
+        self.model.evaluate(testX, testY, batch_size=self.batch_size)
+        # TODO: Fix metrics to show more than just accuracy
+>>>>>>> origin/HarryPotterData
