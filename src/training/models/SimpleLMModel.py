@@ -28,10 +28,10 @@ class LM_Model:
         self.model.add(Bidirectional(LSTM(380, return_sequences=True)))
 
         self.model.add(Bidirectional(LSTM(380, return_sequences=True)))
-        self.model.add(Bidirectional(LSTM(380, return_sequences=True)))
+        self.model.add(Bidirectional(LSTM(380)))
 
         # TODO: ensure vocab_length is imported into this file
-        self.model.add(TimeDistributed(Dense(word_space_length)))
+        self.model.add(Dense(word_space_length))
         self.model.add(Activation('softmax'))
 
         # TODO: Add the perplexity metric - should we do this using a package or write the fcn. ourselves?

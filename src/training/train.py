@@ -112,7 +112,6 @@ def getLMDataSet(p,wp):
 
     x = vectorize(x, wp)
     y = vectorize(y, wp, 1)
-    print(x.shape, y.shape)
 
     xTrain = x[:round(len(x)*0.9)]
     yTrain = y[:round(len(y)*0.9)]
@@ -242,6 +241,7 @@ def main():
             model.saveCheckpoint(checkpointPath)
         elif modelType == "--LM":
             yTrain = to_categorical(yTrain, word_space_length)
+            # TODO: Reshape this
             print(xTrain.shape)
             print(yTrain.shape)
             model.train(xTrain, yTrain)
