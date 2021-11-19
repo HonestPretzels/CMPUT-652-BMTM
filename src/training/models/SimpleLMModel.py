@@ -54,9 +54,9 @@ class LM_Model:
     def saveCheckpoint(self, checkpoint):
         self.model.save(checkpoint)
 
-    def train(self, trainX, trainY):
+    def train(self, trainX, trainY, testX, testY):
         self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs,
-                       validation_split=self.validation_split)
+                       validation_data=(testX, testY))
     
     def test(self, testX, testY):
         self.model.evaluate(testX, testY, batch_size=self.batch_size)

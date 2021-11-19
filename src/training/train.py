@@ -241,10 +241,12 @@ def main():
             model.saveCheckpoint(checkpointPath)
         elif modelType == "--LM":
             yTrain = to_categorical(yTrain, word_space_length)
+            yTest = to_categorical(yTest, word_space_length)
+            yTrain = yTrain.reshape((yTrain.shape[0], word_space_length))
+            yTest = yTest.reshape((yTest.shape[0], word_space_length))
             # TODO: Reshape this
-            print(xTrain.shape)
             print(yTrain.shape)
-            model.train(xTrain, yTrain)
+            model.train(xTrain, yTrain, xTest, yTest)
             model.saveCheckpoint(checkpointPath)
 
 
