@@ -2,14 +2,13 @@ import sys
 from models.POSLMModel import POSLM_Model
 from models.SimplePOSModel import POS_Model 
 from models.SimpleLMModel import LM_Model 
-from consts import sentence_max_length, POS_space_length
+from consts import sentence_max_length, POS_space_length, word_space_length
 from keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import os
 import csv
 import json
 import re
-
 # If you get an error that models are not included, run this script from the training directory
 
 def getModel(modelType):
@@ -17,7 +16,7 @@ def getModel(modelType):
     Select and return model based on model type
     '''
     if modelType == '--CL':
-        return CL_Model()
+        return POSLM_Model()
     elif modelType == '--LM':
         return LM_Model()
     else:
@@ -52,7 +51,7 @@ def setHyperParameters(model, configPath):
         configDict = json.loads(f)
         model.loadHyperParameters(configDict)
 
-def vectorize(sequence, dataFile):
+def vectorize(sequence, dataFile, maxLen=sentence_max_length):
     '''
     Taking a sequence of words or tags, return a N*d np array of one-hot vectors
     where N is the number of items in the list and d is the length of the
@@ -65,13 +64,68 @@ def vectorize(sequence, dataFile):
     
     for i in range(len(sequence)):
         intSequences.append([tags.index(re.sub(r'[^\w\s]', '', item)) for item in sequence[i]])
-    return pad_sequences(intSequences, maxlen=sentence_max_length, padding="post")
+    return pad_sequences(intSequences, maxlen=maxLen, padding="post")
 
-def getDataSet(p, wp, posp):
+def getLMDataSet(p,wp):
+    # TODO: Add harry potter support
+    extension = os.path.splitext(p)[1]
+    # if extension == ".csv":
+    #     x = []
+    #     y = []
+    #     with open(p, "r", newline="") as f:
+    #         currX = []
+    #         currY = []
+    #         reader = csv.reader(f)
+    #         for line in reader:
+    #             if len(currX) == 4:
+    #                 x.append(currX)
+    #                 y.append(currY)
+    #                 currX = []
+    #                 currY = []
+    #             currX.append(line[0])
+    #             currY.append(line[1])
+
+    if extension == ".txt":
+        sentences = []
+        with open(p, "r") as f:
+            currSentence = []
+            for line in f:
+                if line == "\n":
+                    sentences.append(currSentence)
+                    currSentence = []
+                else:
+                    currSentence.append(line.split(' ')[0])
+    else:
+        print("ERROR: Unknown file type for dataset. Please use txt or csv files")
+        exit(1)
+
+    x = []
+    y = []
+    for sentence in sentences:
+        if len(sentence) < 5:
+            x.append(sentence)
+            y.append([])
+        for i in range(len(sentence)-5):
+            x.append(sentence[i:i+4])
+            y.append([sentence[i+4]])
+            
+
+    x = vectorize(x, wp)
+    y = vectorize(y, wp, 1)
+    print(x.shape, y.shape)
+
+    xTrain = x[:round(len(x)*0.9)]
+    yTrain = y[:round(len(y)*0.9)]
+    xValid = x[round(len(x)*0.9):]
+    yValid = y[round(len(y)*0.9):]
+
+
+    return xTrain, yTrain, xValid, yValid
+
+def getPOSDataSet(p, wp, posp):
     '''
     Open the files at the path and load the data
     TODO: Enable loading separate files for train and validation
-    TODO: MAKE HARRY POTTER DATA WORK
     '''
     extension = os.path.splitext(p)[1]
     if extension == ".csv":
@@ -134,8 +188,10 @@ def main():
         1. The path to the dataset to be trained on. Will be split into train and test batch
         2. The path to the checkpoint directory
         3. The type of model to be trained (--POS, --LM, --POSLM)
-        4. The hyperparameter config file
-        4. if "--Tune" will do hyperparameter tuning
+        4. The file containing the possible words
+        5. The file containing the possible POS tags
+        6. The hyperparameter config file
+        7. if "--Tune" will do hyperparameter tuning
 
     '''
     dataPath = sys.argv[1]
@@ -145,16 +201,18 @@ def main():
     posPath = sys.argv[5]
     if modelType == "--POS":
         print("Simple POS Model Selected")
+        #TODO: Enable cross validation splits
+        xTrain, yTrain, xTest, yTest = getPOSDataSet(dataPath, wordPath, posPath)
     elif modelType == "--LM":
         print("Simple Language Model Selected")
+        xTrain, yTrain, xTest, yTest = getLMDataSet(dataPath, wordPath)
+
     elif modelType == "--CL":
         print("POS + LM Model Selected")
     else:
         print("ERROR: Please Select a Valid Model Type")
         exit(1)
 
-    #TODO: Enable cross validation splits
-    xTrain, yTrain, xTest, yTest = getDataSet(dataPath, wordPath, posPath)
 
     model = getModel(modelType)
     if os.path.isdir(checkpointPath):
@@ -179,8 +237,15 @@ def main():
         # Set to 5 epochs to allow for quick grid search, do 5 epochs per hyperParameter set
         tuneHyperParameters(model, xTrain, yTrain, hyperParameterPath, 5)
     else:
-        model.train(xTrain, to_categorical(yTrain, POS_space_length))
-        model.saveCheckpoint(checkpointPath)
+        if modelType == "--POS":
+            model.train(xTrain, to_categorical(yTrain, POS_space_length))
+            model.saveCheckpoint(checkpointPath)
+        elif modelType == "--LM":
+            yTrain = to_categorical(yTrain, word_space_length)
+            print(xTrain.shape)
+            print(yTrain.shape)
+            model.train(xTrain, yTrain)
+            model.saveCheckpoint(checkpointPath)
 
 
 if __name__ == "__main__":

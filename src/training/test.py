@@ -1,4 +1,4 @@
-from train import getModel, getDataSet, to_categorical
+from train import getModel, getPOSDataSet, to_categorical
 from consts import POS_space_length
 import sys
 
@@ -10,7 +10,7 @@ def main():
     posPath = sys.argv[5]
     pass
 
-    xTest, yTest, _, _ = getDataSet(dataPath, wordPath, posPath)
+    xTest, yTest, _, _ = getPOSDataSet(dataPath, wordPath, posPath)
 
     model = getModel(modelType)
     hyp_dict = {"batch_size": 48, "oogaBooga":"ahhhhhh"}

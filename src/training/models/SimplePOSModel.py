@@ -31,7 +31,7 @@ class POS_Model:
         self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout, return_sequences=True)))
         self.model.add(TimeDistributed(Dense(self.POS_space)))
         self.model.add(Activation('softmax'))
-        self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy', 'precision', 'recall'])
+        self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
         self.model.summary()
 
     def loadHyperParameters(self, config_dict):
