@@ -1,12 +1,11 @@
 import sys
-from models.POSLMModel import POSLM_Model
-from models.SimplePOSModel import POS_Model 
-from models.SimpleLMModel import LM_Model 
+import os
+import SimplePOSModel
+import SimpleLMModel
 from consts import POS_space_length
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import numpy as np
-import os
 import csv
 import json
 import re
