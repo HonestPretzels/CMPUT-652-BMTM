@@ -2,8 +2,9 @@ import sys
 from models.POSLMModel import POSLM_Model
 from models.SimplePOSModel import POS_Model 
 from models.SimpleLMModel import LM_Model 
-from consts import sentence_max_length, POS_space_length, word_space_length
-from keras.preprocessing.sequence import pad_sequences
+from consts import POS_space_length
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
 import numpy as np
 import os
 import csv
@@ -22,21 +23,6 @@ def getModel(modelType):
     else:
         return POS_Model()
 
-# Are we sure we need this? keras has a to_categorical function:
-# https://www.tensorflow.org/api_docs/python/tf/keras/utils/to_categorical
-def to_categorical(sequences, categories):
-    '''
-    One-hotify a sequence. Taken from here: https://nlpforhackers.io/lstm-pos-tagger-keras/
-    '''
-    cat_sequences = []
-    for s in sequences:
-        cats = []
-        for item in s:
-            cats.append(np.zeros(categories))
-            cats[-1][item] = 1.0
-        cat_sequences.append(cats)
-    return np.array(cat_sequences)
-
 def tuneHyperParameters(model, trainX, trainY):
     '''
     Do some form of hyper parameter tuning here and output a JSON to the outputPath
@@ -51,160 +37,30 @@ def setHyperParameters(model, configPath):
         configDict = json.loads(f)
         model.loadHyperParameters(configDict)
 
-def vectorize(sequence, dataFile, maxLen=sentence_max_length):
-    '''
-    Taking a sequence of words or tags, return a N*d np array of one-hot vectors
-    where N is the number of items in the list and d is the length of the
-    vector space
-    '''
-    with open(dataFile, 'r') as f:
-        lines = f.readlines()
-        tags = [line.split(':')[0] for line in lines]
-    intSequences = []
-    
-    for i in range(len(sequence)):
-        intSequences.append([tags.index(re.sub(r'[^\w\s]', '', item)) for item in sequence[i]])
-    return pad_sequences(intSequences, maxlen=maxLen, padding="post")
-
-def getLMDataSet(p,wp):
-    # TODO: Add harry potter support
-    extension = os.path.splitext(p)[1]
-    # if extension == ".csv":
-    #     x = []
-    #     y = []
-    #     with open(p, "r", newline="") as f:
-    #         currX = []
-    #         currY = []
-    #         reader = csv.reader(f)
-    #         for line in reader:
-    #             if len(currX) == 4:
-    #                 x.append(currX)
-    #                 y.append(currY)
-    #                 currX = []
-    #                 currY = []
-    #             currX.append(line[0])
-    #             currY.append(line[1])
-
-    if extension == ".txt":
-        sentences = []
-        with open(p, "r") as f:
-            currSentence = []
-            for line in f:
-                if line == "\n":
-                    sentences.append(currSentence)
-                    currSentence = []
-                else:
-                    currSentence.append(line.split(' ')[0])
-    else:
-        print("ERROR: Unknown file type for dataset. Please use txt or csv files")
-        exit(1)
-
-    x = []
-    y = []
-    for sentence in sentences:
-        if len(sentence) < 5:
-            x.append(sentence)
-            y.append([])
-        for i in range(len(sentence)-5):
-            x.append(sentence[i:i+4])
-            y.append([sentence[i+4]])
-            
-
-    x = vectorize(x, wp)
-    y = vectorize(y, wp, 1)
-
-    xTrain = x[:round(len(x)*0.9)]
-    yTrain = y[:round(len(y)*0.9)]
-    xValid = x[round(len(x)*0.9):]
-    yValid = y[round(len(y)*0.9):]
-
-
-    return xTrain, yTrain, xValid, yValid
-
-def getPOSDataSet(p, wp, posp):
-    '''
-    Open the files at the path and load the data
-    TODO: Enable loading separate files for train and validation
-    '''
-    extension = os.path.splitext(p)[1]
-    if extension == ".csv":
-        x = []
-        y = []
-        with open(p, "r", newline="") as f:
-            currX = []
-            currY = []
-            reader = csv.reader(f)
-            for line in reader:
-                if len(currX) == 4:
-                    x.append(currX)
-                    y.append(currY)
-                    currX = []
-                    currY = []
-                currX.append(line[0])
-                currY.append(line[1])
-
-    elif extension == ".txt":
-        x = []
-        y = []
-        with open(p, "r") as f:
-            currX = []
-            currY = []
-            for line in f:
-                if line == "\n":
-                    x.append(currX)
-                    y.append(currY)
-                    currX = []
-                    currY = []
-                    continue
-                if len(currX) == 4:
-                    x.append(currX)
-                    y.append(currY)
-                    currX = []
-                    currY = []
-                    
-                a = line.split(' ')[0].strip()
-                b = line.split(' ')[1].strip()
-                currX.append(a)
-                currY.append(b)
-    else:
-        print("ERROR: Unknown file type for dataset. Please use txt or csv files")
-        exit(1)
-
-    x = vectorize(x, wp)
-    y = vectorize(y, posp)
-
-    xTrain = x[:round(len(x)*0.9)]
-    yTrain = y[:round(len(y)*0.9)]
-    xValid = x[round(len(x)*0.9):]
-    yValid = y[round(len(y)*0.9):]
-
-
-    return xTrain, yTrain, xValid, yValid
-
 def main():
     '''
     Called with command line arguments:
         1. The path to the dataset to be trained on. Will be split into train and test batch
         2. The path to the checkpoint directory
         3. The type of model to be trained (--POS, --LM, --POSLM)
-        4. The file containing the possible words
-        5. The file containing the possible POS tags
-        6. The hyperparameter config file
-        7. if "--Tune" will do hyperparameter tuning
+        4. The hyperparameter config file
+        5. if "--Tune" will do hyperparameter tuning
 
     '''
     dataPath = sys.argv[1]
     checkpointPath = sys.argv[2]
     modelType = sys.argv[3]
-    wordPath = sys.argv[4]
-    posPath = sys.argv[5]
     if modelType == "--POS":
         print("Simple POS Model Selected")
         #TODO: Enable cross validation splits
-        xTrain, yTrain, xTest, yTest = getPOSDataSet(dataPath, wordPath, posPath)
+        X = np.load(os.path.join(dataPath, 'PosX.npy'))
+        Y = np.load(os.path.join(dataPath, 'PosY.npy'))
+        xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
     elif modelType == "--LM":
         print("Simple Language Model Selected")
-        xTrain, yTrain, xTest, yTest = getLMDataSet(dataPath, wordPath)
+        X = np.load(os.path.join(dataPath, 'Lm4to1X.npy'))
+        Y = np.load(os.path.join(dataPath, 'Lm4to1Y.npy'))
+        xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
 
     elif modelType == "--CL":
         print("POS + LM Model Selected")
@@ -220,14 +76,14 @@ def main():
     else:
         os.mkdir(checkpointPath)
 
-    if len(sys.argv) > 6:
-        hyperParameterPath = sys.argv[6]
+    if len(sys.argv) > 4:
+        hyperParameterPath = sys.argv[4]
         setHyperParameters(model, hyperParameterPath)
         print("Hyper Parameters set based on %s"%hyperParameterPath)
 
     doTune = False
-    if len(sys.argv) > 7:
-        doTune = (sys.argv[7] == "--Tune")
+    if len(sys.argv) > 5:
+        doTune = (sys.argv[5] == "--Tune")
         if doTune:
             print("Hyper Parameter Tuning Enabled")
     
@@ -237,15 +93,10 @@ def main():
         tuneHyperParameters(model, xTrain, yTrain, hyperParameterPath, 5)
     else:
         if modelType == "--POS":
-            model.train(xTrain, to_categorical(yTrain, POS_space_length))
+            model.train(xTrain, tf.keras.utils.to_categorical(yTrain, POS_space_length))
             model.saveCheckpoint(checkpointPath)
         elif modelType == "--LM":
-            yTrain = to_categorical(yTrain, word_space_length)
-            yTest = to_categorical(yTest, word_space_length)
-            yTrain = yTrain.reshape((yTrain.shape[0], word_space_length))
-            yTest = yTest.reshape((yTest.shape[0], word_space_length))
             # TODO: Reshape this
-            print(yTrain.shape)
             model.train(xTrain, yTrain, xTest, yTest)
             model.saveCheckpoint(checkpointPath)
 

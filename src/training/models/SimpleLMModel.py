@@ -10,9 +10,9 @@ class LM_Model:
 
     def __init__(self):
         self.optimizer = "Adam"
-        self.loss = 'categorical_crossentropy'
+        self.loss = 'sparse_categorical_crossentropy'
         self.learning_rate = 0.001
-        self.batch_size = 128
+        self.batch_size = 32
         self.epochs = 50 # Lan et al. use 500 epochs for PTB data set
         self.validation_split = 0.2
 
@@ -25,10 +25,10 @@ class LM_Model:
         self.model.add(Embedding(word_space_length, 64))  # Is 64 only for PTB?
 
         # TODO: Add the output from the POS model to the first hidden layer
-        self.model.add(Bidirectional(LSTM(380, return_sequences=True)))
+        self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
 
-        self.model.add(Bidirectional(LSTM(380, return_sequences=True)))
-        self.model.add(Bidirectional(LSTM(380)))
+        self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
+        self.model.add(Bidirectional(LSTM(128)))
 
         # TODO: ensure vocab_length is imported into this file
         self.model.add(Dense(word_space_length))
