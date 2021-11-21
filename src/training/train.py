@@ -1,7 +1,7 @@
 import sys
 import os
-import SimplePOSModel
-import SimpleLMModel
+from SimplePOSModel import POS_Model
+from SimpleLMModel import LM_Model
 from consts import POS_space_length
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
@@ -55,6 +55,7 @@ def main():
         X = np.load(os.path.join(dataPath, 'PosX.npy'))
         Y = np.load(os.path.join(dataPath, 'PosY.npy'))
         xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
+
     elif modelType == "--LM":
         print("Simple Language Model Selected")
         X = np.load(os.path.join(dataPath, 'Lm4to1X.npy'))
