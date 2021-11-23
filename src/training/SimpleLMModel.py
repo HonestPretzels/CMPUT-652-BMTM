@@ -15,24 +15,24 @@ class LM_Model:
         self.batch_size = 32
         self.epochs = 50 # Lan et al. use 500 epochs for PTB data set
         self.validation_split = 0.2
+        self.sentence_max = sentence_max_length
+        self.word_space = word_space_length
+        self.lstm_dropout = 0.8
 
         self.initModel()
 
     def initModel(self):
         model = None
         self.model = Sequential()
-        self.model.add(InputLayer((sentence_max_length,)))
-        self.model.add(Embedding(word_space_length, 64))  # Is 64 only for PTB?
+        self.model.add(InputLayer((self.sentence_max,)))
+        self.model.add(Embedding(self.word_space, 64))  # Is 64 only for PTB?
 
-        # TODO: Add the output from the POS model to the first hidden layer
         self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
-
         self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
         self.model.add(Bidirectional(LSTM(128)))
 
         # TODO: ensure vocab_length is imported into this file
-        self.model.add(Dense(word_space_length))
-        self.model.add(Activation('softmax'))
+        self.model.add(TimeDistributed(Dense(self.word_space, activation='softmax'))
 
         # TODO: Add the perplexity metric - should we do this using a package or write the fcn. ourselves?
         # using accuracy as metric as a placeholder so that the code runs
