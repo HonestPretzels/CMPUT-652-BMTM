@@ -26,8 +26,8 @@ class POSLM_Model:
 
     def initModel(self):
         input_layer = Input((self.sentence_max,))
-        aux_model = self.posHiddenRep(input_layer)
-        lm_model = self.lmHiddenRep(input_layer,None)
+        aux_model, aux_layer = self.posHiddenRep(input_layer)
+        lm_model = self.lmHiddenRep(input_layer,aux_layer)
         print(aux_model)
         print(lm_model)
         self.model = Model(inputs=input_layer, outputs=[aux_model,lm_model], name="POSLM_Model")
@@ -42,32 +42,22 @@ class POSLM_Model:
     def posHiddenRep(self, inputLayer):
         # This is the POS model on it's own, we
         aux_model = Embedding(self.word_space, 64)(inputLayer)
-        aux_model = Bidirectional(LSTM(256, dropout=self.lstm_dropout, return_sequences=True))(aux_model)
-        aux_model = TimeDistributed(Dense(self.POS_space))(aux_model)
+        aux_layer = Bidirectional(LSTM(128, dropout=self.lstm_dropout, return_sequences=True))(aux_model)
+        aux_model = TimeDistributed(Dense(self.POS_space))(aux_layer)
         aux_model = Activation('softmax', name="posModel")(aux_model)
 
-        return aux_model
+        return aux_model, aux_layer
 
 
     def lmHiddenRep(self, inputLayer, aux_layer):
         lm_model = Embedding(self.word_space,64)(inputLayer)
         lm_model = Bidirectional(LSTM(128, return_sequences=True))(lm_model)
+        lm_model = Concatenate(axis=1)([lm_model, aux_layer])
         lm_model = Bidirectional(LSTM(128, return_sequences=True))(lm_model)
         lm_model = Bidirectional(LSTM(128))(lm_model)
         lm_model = Dense(self.word_space)(lm_model)
         lm_model = Activation('softmax', name="lmModel")(lm_model)
-        
-
-        # concatenate the aux. decoder's hidden representation with the first hidden layer
-        # h1 = self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout, return_sequences=True)))
-        # h1 = Concatenate()([auxiliary_hidden_representation, h1])
-
-        # self.model.add(Bidirectional(LSTM(128, return_sequences=True)))(h1)
-        # self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
-        # self.model.add(TimeDistributed(Dense(self.word_space, activation='softmax')))
-
-        # self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
-        # self.model.summary()
+       
         return lm_model
 
 
