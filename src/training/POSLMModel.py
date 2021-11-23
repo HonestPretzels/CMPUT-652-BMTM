@@ -23,8 +23,10 @@ class POSLM_Model:
         self.initModel()
 
     def initModel(self):
+        aux_hid_rep = self.posHiddenRep()
+        self.lmHiddenRep(aux_hid_rep)
 
-        # POS Model
+    def posHiddenRep(self):
         self.model = Sequential()
         self.model.add(InputLayer((self.sentence_max,)))
         self.model.add(Embedding(self.word_space, 64))
@@ -32,22 +34,32 @@ class POSLM_Model:
         # pass hidden representation to LM
         aux_hidden_rep = self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout)))
 
-        # LM Model
+        # getting error for line 40:
+        # ValueError: `TimeDistributed` Layer should be passed as
+        # `input_shape ` with at least 3 dimensions, received: (None, 512)
+        self.model.add(TimeDistributed(Dense(self.POS_space, activation='softmax')))(aux_hidden_rep)
+        self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
+        self.model.summary()
+
+        return auxiliary_hidden_representation
+
+
+    def lmHiddenRep(self, auxiliary_hidden_representation):
         self.model = Sequential()
         self.model.add(InputLayer((self.sentence_max,)))
         self.model.add(Embedding(self.word_space,64))
 
         # concatenate the aux. decoder's hidden representation with the first hidden layer
-        h1 = self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout,
-                                               return_sequence=True)))
-        h1 = keras.layers.Concatenate(axis=1)([aux_hidden_rep, h1])
+        h1 = self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout, return_sequence=True)))
+        h1 = Concatenate(axis=1)([auxiliary_hidden_representation, h1])
 
         self.model.add(Bidirectional(LSTM(128, return_sequences=True)))(h1)
-        self.model.add(Bidirectional(LSTM(128)))
+        self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
         self.model.add(TimeDistributed(Dense(self.word_space, activation='softmax')))
 
         self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
         self.model.summary()
+
 
     def loadCheckpoint(self, checkpoint):
         print('Loading Checkpoint: %s' % checkpoint)
