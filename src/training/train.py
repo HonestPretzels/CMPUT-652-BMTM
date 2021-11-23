@@ -2,6 +2,7 @@ import sys
 import os
 from SimplePOSModel import POS_Model
 from SimpleLMModel import LM_Model
+from POSLMModel import POSLM_Model
 from consts import POS_space_length
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
@@ -15,7 +16,7 @@ def getModel(modelType):
     '''
     Select and return model based on model type
     '''
-    if modelType == '--CL':
+    if modelType == '--POSLM':
         return POSLM_Model()
     elif modelType == '--LM':
         return LM_Model()
@@ -62,8 +63,13 @@ def main():
         Y = np.load(os.path.join(dataPath, 'Lm4to1Y.npy'))
         xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
 
-    elif modelType == "--CL":
+    elif modelType == "--POSLM":
         print("POS + LM Model Selected")
+        X = np.load(os.path.join(dataPath, 'Lm4to1X.npy'))
+        POSY = np.load(os.path.join(dataPath, 'PosY.npy'))
+        LMY = np.load(os.path.join(dataPath, 'Lm4to1Y.npy'))
+        xTrain, xTest, posYTrain, posYTest, lmYTrain, lmYTest = train_test_split(X, POSY, LMY)
+        
     else:
         print("ERROR: Please Select a Valid Model Type")
         exit(1)
@@ -99,6 +105,12 @@ def main():
             # TODO: Reshape this
             model.train(xTrain, yTrain, xTest, yTest)
             model.saveCheckpoint(checkpointPath)
+        elif modelType == "--POSLM":
+            posYTrain = tf.keras.utils.to_categorical(posYTrain, POS_space_length)
+            posYTest = tf.keras.utils.to_categorical(posYTest, POS_space_length)
+            model.train(xTrain, posYTrain, lmYTrain, xTest, posYTest, lmYTest)
+            model.saveCheckpoint(checkpointPath)
+            
 
 
 if __name__ == "__main__":

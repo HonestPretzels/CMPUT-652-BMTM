@@ -1,8 +1,10 @@
 from consts import word_space_length, POS_space_length, sentence_max_length
-from keras.models import Sequential, load_model
+from keras.models import Model, Sequential, load_model
 from keras.layers import Dense, LSTM, InputLayer, Bidirectional, \
-    TimeDistributed, Embedding, Activation, Concatenate
+    TimeDistributed, Embedding, Activation, Concatenate, Input
 
+
+# Help taken from here https://www.pyimagesearch.com/2018/06/04/keras-multiple-outputs-and-multiple-losses/
 
 class POSLM_Model:
 
@@ -23,42 +25,50 @@ class POSLM_Model:
         self.initModel()
 
     def initModel(self):
-        aux_hid_rep = self.posHiddenRep()
-        self.lmHiddenRep(aux_hid_rep)
-
-    def posHiddenRep(self):
-        self.model = Sequential()
-        self.model.add(InputLayer((self.sentence_max,)))
-        self.model.add(Embedding(self.word_space, 64))
-
-        # pass hidden representation to LM
-        aux_hidden_rep = self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout)))
-
-        # getting error for line 40:
-        # ValueError: `TimeDistributed` Layer should be passed as
-        # `input_shape ` with at least 3 dimensions, received: (None, 512)
-        self.model.add(TimeDistributed(Dense(self.POS_space, activation='softmax')))(aux_hidden_rep)
-        self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
+        input_layer = Input((self.sentence_max,))
+        aux_model = self.posHiddenRep(input_layer)
+        lm_model = self.lmHiddenRep(input_layer,None)
+        print(aux_model)
+        print(lm_model)
+        self.model = Model(inputs=input_layer, outputs=[aux_model,lm_model], name="POSLM_Model")
+        losses = {
+            "posModel": "categorical_crossentropy",
+            "lmModel": "sparse_categorical_crossentropy"
+        }
+        lossWeights = {"posModel": 1.0, "lmModel": 1.0}
+        self.model.compile(optimizer=self.optimizer, loss=losses, loss_weights=lossWeights, metrics=["accuracy"])
         self.model.summary()
 
-        return auxiliary_hidden_representation
+    def posHiddenRep(self, inputLayer):
+        # This is the POS model on it's own, we
+        aux_model = Embedding(self.word_space, 64)(inputLayer)
+        aux_model = Bidirectional(LSTM(256, dropout=self.lstm_dropout, return_sequences=True))(aux_model)
+        aux_model = TimeDistributed(Dense(self.POS_space))(aux_model)
+        aux_model = Activation('softmax', name="posModel")(aux_model)
+
+        return aux_model
 
 
-    def lmHiddenRep(self, auxiliary_hidden_representation):
-        self.model = Sequential()
-        self.model.add(InputLayer((self.sentence_max,)))
-        self.model.add(Embedding(self.word_space,64))
+    def lmHiddenRep(self, inputLayer, aux_layer):
+        lm_model = Embedding(self.word_space,64)(inputLayer)
+        lm_model = Bidirectional(LSTM(128, return_sequences=True))(lm_model)
+        lm_model = Bidirectional(LSTM(128, return_sequences=True))(lm_model)
+        lm_model = Bidirectional(LSTM(128))(lm_model)
+        lm_model = Dense(self.word_space)(lm_model)
+        lm_model = Activation('softmax', name="lmModel")(lm_model)
+        
 
         # concatenate the aux. decoder's hidden representation with the first hidden layer
-        h1 = self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout, return_sequence=True)))
-        h1 = Concatenate(axis=1)([auxiliary_hidden_representation, h1])
+        # h1 = self.model.add(Bidirectional(LSTM(256, dropout=self.lstm_dropout, return_sequences=True)))
+        # h1 = Concatenate()([auxiliary_hidden_representation, h1])
 
-        self.model.add(Bidirectional(LSTM(128, return_sequences=True)))(h1)
-        self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
-        self.model.add(TimeDistributed(Dense(self.word_space, activation='softmax')))
+        # self.model.add(Bidirectional(LSTM(128, return_sequences=True)))(h1)
+        # self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
+        # self.model.add(TimeDistributed(Dense(self.word_space, activation='softmax')))
 
-        self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
-        self.model.summary()
+        # self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
+        # self.model.summary()
+        return lm_model
 
 
     def loadCheckpoint(self, checkpoint):
@@ -68,9 +78,11 @@ class POSLM_Model:
     def saveCheckpoint(self, checkpoint):
         self.model.save(checkpoint)
 
-    def train(self, trainX, trainY, testX, testY):
-        self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs,
-                       validation_data=(testX, testY))
+    def train(self, trainX, trainYPOS, trainYLM, testX, testYPOS, testYLM):
+        self.model.fit(x=trainX, 
+                       y={"posModel":trainYPOS, "lmModel":trainYLM}, 
+                       batch_size=self.batch_size, epochs=self.epochs, verbose=1,
+                       validation_data=(testX, {"posModel":testYPOS, "lmModel":testYLM}))
 
-    def test(self, testX, testY):
-        self.model.evaluate(testX, testY, batch_size=self.batch_size)
+    # def test(self, testX, testY):
+    #     self.model.evaluate(testX, testY, batch_size=self.batch_size)

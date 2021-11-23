@@ -59,34 +59,34 @@ def main():
     tagsVocab.extend([k for k in nltk.FreqDist(tag for (_,tag) in tokens).keys()])
     
     # Create and save the POS data set
-    # x = []
-    # y = []
-    # for i in range(len(sentences)):
-    #     currSentence = sentences[i]
-    #     currTags = tags[i]
-    #     if len(currSentence) < 4:
-    #         x.append(currSentence)
-    #         y.append(currTags)
-    #     else:
-    #         for j in range(len(currSentence)-4):
-    #             x.append(currSentence[j:j+4])
-    #             y.append(currTags[j:j+4])
-    # x = vectorize(x, vocab, 4)
-    # y = vectorize(y, tagsVocab, 4)
-    # x = np.array(x)
-    # y = np.array(y)
+    x = []
+    y = []
+    for i in range(len(sentences)):
+        currSentence = sentences[i]
+        currTags = tags[i]
+        if len(currSentence) < 4:
+            x.append(currSentence)
+            y.append(currTags)
+        else:
+            for j in range(len(currSentence)-4):
+                x.append(currSentence[j:j+4])
+                y.append(currTags[j:j+4])
+    x = vectorize(x, vocab, 4)
+    y = vectorize(y, tagsVocab, 4)
+    x = np.array(x)
+    y = np.array(y)
     
-    # outX = path.join(outputDir, 'PosX.npy')
-    # outY = path.join(outputDir, 'Posy.npy')
-    # np.save(outX, x)
-    # np.save(outY, y)
+    outX = path.join(outputDir, 'PosX.npy')
+    outY = path.join(outputDir, 'Posy.npy')
+    np.save(outX, x)
+    np.save(outY, y)
     
     # Create and save the 4 -> 1 LM Data set
     x = []
     y = []
     for i in range(len(sentences)):
         currSentence = sentences[i]
-        if len(currSentence) < 5:
+        if len(currSentence) < 4:
             x.append(currSentence)
             y.append([])
         else:

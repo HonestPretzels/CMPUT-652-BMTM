@@ -32,7 +32,7 @@ class LM_Model:
         self.model.add(Bidirectional(LSTM(128)))
 
         # TODO: ensure vocab_length is imported into this file
-        self.model.add(TimeDistributed(Dense(self.word_space, activation='softmax')))
+        self.model.add(Dense(self.word_space, activation='softmax'))
 
         # TODO: Add the perplexity metric - should we do this using a package or write the fcn. ourselves?
         # using accuracy as metric as a placeholder so that the code runs
