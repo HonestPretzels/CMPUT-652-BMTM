@@ -2,7 +2,8 @@
 from consts import word_space_length, sentence_max_length # , vocab_length
 from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, InputLayer, Bidirectional,  TimeDistributed, Embedding, Activation
-
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.grid_search import GridSearchCV
 
 class LM_Model:
 
@@ -11,9 +12,9 @@ class LM_Model:
     def __init__(self):
         self.optimizer = "Adam"
         self.loss = 'sparse_categorical_crossentropy'
-        self.learning_rate = 0.001
-        self.batch_size = 32
-        self.epochs = 50 # Lan et al. use 500 epochs for PTB data set
+        self.learning_rate = np.array([0.001, 0.01, 0.05, 0.1])
+        self.batch_size = np.array([20, 40, 60, 80]) # Lan et al. used 20 for PTB data set
+        self.epochs = np.array([50, 100, 250, 500]) # Lan et al. used 500 epochs for PTB data set
         self.validation_split = 0.2
         self.sentence_max = sentence_max_length
         self.word_space = word_space_length
@@ -47,6 +48,18 @@ class LM_Model:
             except:
                 continue
 
+    # only added gridsearch for this model - if works well, then we can use it for poslm             
+    def gridSearch(self):
+        start = time()
+        model = KerasClassifier(build_fn = self.initModel)
+        param_grid = dict(self.learning_rate, nb_epoch = self.epochs, batch_size = self.batches)
+        grid = GridSearchCV(estimator=model, param_grid=param_grid)
+        grid_result = grid.fit(trainX, trainY)
+        print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+        for params, mean_score, scores in grid_result.grid_scores_:
+            print("LM mean: %f and std: (%f) with: %r" % (scores.mean(), scores.std(), params))
+        print("total time for LM:", time()-start)
+                
     def loadCheckpoint(self, checkpoint):
         print('Loading Checkpoint: %s'%checkpoint)
         self.model = load_model(checkpoint)
