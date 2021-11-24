@@ -29,8 +29,7 @@ def main():
     posJSON = sys.argv[3]
     outputDir = sys.argv[4]
     
-    tokens = []
-    sentences = []
+    words = []
     tags = []
     files = [path.join(inputDir, f) for f in getAllFiles(inputDir)]
     # Parse into sentences
@@ -38,41 +37,44 @@ def main():
         with open(fileName, 'r', encoding="utf8") as f:
             lines = f.read().lower()
             currTokens = nltk.pos_tag(nltk.wordpunct_tokenize(lines))
-            tokens.extend(currTokens)
-            currSentence = []
-            currTags = []
-            for word, pos in currTokens:
-                if pos == ".":
-                    currSentence.append(word)
-                    currTags.append(pos)
-                    sentences.append(currSentence)
-                    tags.append(currTags)
-                    currSentence = []
-                    currTags = []
-                else:
-                    currSentence.append(word)
-                    currTags.append(pos)
+            words.extend(word for (word,_) in currTokens)
+            tags.extend(tag for (_,tag) in currTokens)
+    print(words[16:32])
+    print(tags[16:32])
+            # currSentence = []
+            # currTags = []
+            # for word, pos in currTokens:
+            #     if pos == ".":
+            #         currSentence.append(word)
+            #         currTags.append(pos)
+            #         sentences.append(currSentence)
+            #         tags.append(currTags)
+            #         currSentence = []
+            #         currTags = []
+            #     else:
+            #         currSentence.append(word)
+            #         currTags.append(pos)
                     
     vocab = ['NIL']
-    vocab.extend([k for k in nltk.FreqDist(word for (word,_) in tokens).keys()])
+    vocab.extend([k for k in nltk.FreqDist(words).keys()])
     tagsVocab = ['NIL']
-    tagsVocab.extend([k for k in nltk.FreqDist(tag for (_,tag) in tokens).keys()])
+    tagsVocab.extend([k for k in nltk.FreqDist(tags).keys()])
     
     # Create and save the POS data set
     x = []
     y = []
-    for i in range(len(sentences)):
-        currSentence = sentences[i]
-        currTags = tags[i]
-        if len(currSentence) < 4:
-            x.append(currSentence)
-            y.append(currTags)
-        else:
-            for j in range(len(currSentence)-4):
-                x.append(currSentence[j:j+4])
-                y.append(currTags[j:j+4])
-    x = vectorize(x, vocab, 4)
-    y = vectorize(y, tagsVocab, 4)
+    for i in range(len(words)-16):
+        # currSentence = sentences[i]
+        # currTags = tags[i]
+        # if len(currSentence) < 16:
+        #     x.append(currSentence)
+        #     y.append(currTags)
+        # else:
+        #     for j in range(len(currSentence)-16):
+                x.append(words[i:i+16])
+                y.append(tags[i:i+16])
+    x = vectorize(x, vocab, 16)
+    y = vectorize(y, tagsVocab, 16)
     x = np.array(x)
     y = np.array(y)
     
@@ -84,46 +86,46 @@ def main():
     # Create and save the 4 -> 1 LM Data set
     x = []
     y = []
-    for i in range(len(sentences)):
-        currSentence = sentences[i]
-        if len(currSentence) < 4:
-            x.append(currSentence)
-            y.append([])
-        else:
-            for j in range(len(currSentence)-4):
-                x.append(currSentence[j:j+4])
-                y.append([currSentence[j+4]])
-    x = vectorize(x, vocab, 4)
+    for i in range(len(words)-16):
+        # currSentence = sentences[i]
+        # if len(currSentence) < 16:
+        #     x.append(currSentence)
+        #     y.append([])
+        # else:
+            # for j in range(len(currSentence)-16):
+        x.append(words[i:i+16])
+        y.append([words[i+16]])
+    x = vectorize(x, vocab, 16)
     y = vectorize(y, vocab, 1)
     x = np.array(x)
     y = np.array(y)
     
-    outX = path.join(outputDir, 'Lm4to1X.npy')
-    outY = path.join(outputDir, 'Lm4to1Y.npy')
+    outX = path.join(outputDir, 'Lm16to1X.npy')
+    outY = path.join(outputDir, 'Lm16to1Y.npy')
     np.save(outX, x)
     np.save(outY, y)
     
     # Create and save the 1 -> 1 LM Data set
-    x = []
-    y = []
-    for i in range(len(sentences)):
-        currSentence = sentences[i]
-        if len(currSentence) < 2:
-            x.append(currSentence)
-            y.append([])
-        else:
-            for j in range(len(currSentence)-1):
-                x.append([currSentence[j]])
-                y.append([currSentence[j+1]])
-    x = vectorize(x, vocab, 1)
-    y = vectorize(y, vocab, 1)
-    x = np.array(x)
-    y = np.array(y)
+    # x = []
+    # y = []
+    # for i in range(len(sentences)):
+    #     currSentence = sentences[i]
+    #     if len(currSentence) < 2:
+    #         x.append(currSentence)
+    #         y.append([])
+    #     else:
+    #         for j in range(len(currSentence)-1):
+    #             x.append([currSentence[j]])
+    #             y.append([currSentence[j+1]])
+    # x = vectorize(x, vocab, 1)
+    # y = vectorize(y, vocab, 1)
+    # x = np.array(x)
+    # y = np.array(y)
     
-    outX = path.join(outputDir, 'Lm1to1X.npy')
-    outY = path.join(outputDir, 'Lm1to1Y.npy')
-    np.save(outX, x)
-    np.save(outY, y)
+    # outX = path.join(outputDir, 'Lm1to1X.npy')
+    # outY = path.join(outputDir, 'Lm1to1Y.npy')
+    # np.save(outX, x)
+    # np.save(outY, y)
         
         
     

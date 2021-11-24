@@ -1,4 +1,5 @@
 from consts import word_space_length, POS_space_length, sentence_max_length
+import tensorflow as tf
 from keras.models import Model, Sequential, load_model
 from keras.layers import Dense, LSTM, InputLayer, Bidirectional, \
     TimeDistributed, Embedding, Activation, Concatenate, Input
@@ -14,7 +15,7 @@ class POSLM_Model:
         self.optimizer = 'Adam'
         self.loss = 'categorical_crossentropy'
         self.learning_rate = 0.001
-        self.batch_size = 128
+        self.batch_size = 50
         self.epochs = 50
         self.validation_split = 0.2
         self.sentence_max = sentence_max_length
@@ -42,7 +43,7 @@ class POSLM_Model:
     def posHiddenRep(self, inputLayer):
         # This is the POS model on it's own, we
         aux_model = Embedding(self.word_space, 64)(inputLayer)
-        aux_layer = Bidirectional(LSTM(128, dropout=self.lstm_dropout, return_sequences=True))(aux_model)
+        aux_layer = Bidirectional(LSTM(64, dropout=self.lstm_dropout, return_sequences=True))(aux_model)
         aux_model = TimeDistributed(Dense(self.POS_space))(aux_layer)
         aux_model = Activation('softmax', name="posModel")(aux_model)
 
@@ -50,11 +51,11 @@ class POSLM_Model:
 
 
     def lmHiddenRep(self, inputLayer, aux_layer):
-        lm_model = Embedding(self.word_space,64)(inputLayer)
-        lm_model = Bidirectional(LSTM(128, return_sequences=True))(lm_model)
-        lm_model = Concatenate(axis=1)([lm_model, aux_layer])
-        lm_model = Bidirectional(LSTM(128, return_sequences=True))(lm_model)
-        lm_model = Bidirectional(LSTM(128))(lm_model)
+        lm_model = Embedding(self.word_space,128)(inputLayer)
+        lm_model = Concatenate(axis=2)([lm_model, aux_layer])
+        lm_model = Bidirectional(LSTM(128, dropout=self.lstm_dropout, return_sequences=True))(lm_model)
+        lm_model = Bidirectional(LSTM(128, dropout=self.lstm_dropout, return_sequences=True))(lm_model)
+        lm_model = Bidirectional(LSTM(128, dropout=self.lstm_dropout))(lm_model)
         lm_model = Dense(self.word_space)(lm_model)
         lm_model = Activation('softmax', name="lmModel")(lm_model)
        
@@ -68,11 +69,19 @@ class POSLM_Model:
     def saveCheckpoint(self, checkpoint):
         self.model.save(checkpoint)
 
-    def train(self, trainX, trainYPOS, trainYLM, testX, testYPOS, testYLM):
+    def train(self, trainX, trainYPOS, trainYLM, testX, testYPOS, testYLM, checkpointPath):
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpointPath,
+            save_weights_only=True,
+            monitor='val_lmModel_accuracy',
+            mode='max',
+            save_best_only=True)
+        
         self.model.fit(x=trainX, 
-                       y={"posModel":trainYPOS, "lmModel":trainYLM}, 
-                       batch_size=self.batch_size, epochs=self.epochs, verbose=1,
-                       validation_data=(testX, {"posModel":testYPOS, "lmModel":testYLM}))
+                        y={"posModel":trainYPOS, "lmModel":trainYLM}, 
+                        batch_size=self.batch_size, epochs=self.epochs, verbose=1,
+                        validation_data=(testX, {"posModel":testYPOS, "lmModel":testYLM}),
+                        callbacks=[model_checkpoint_callback])
 
-    # def test(self, testX, testY):
-    #     self.model.evaluate(testX, testY, batch_size=self.batch_size)
+    def test(self, testX, testY):
+        self.model.evaluate(testX, testY, batch_size=self.batch_size)

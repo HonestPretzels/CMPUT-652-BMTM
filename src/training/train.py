@@ -65,9 +65,9 @@ def main():
 
     elif modelType == "--POSLM":
         print("POS + LM Model Selected")
-        X = np.load(os.path.join(dataPath, 'Lm4to1X.npy'))
+        X = np.load(os.path.join(dataPath, 'Lm16to1X.npy'))
         POSY = np.load(os.path.join(dataPath, 'PosY.npy'))
-        LMY = np.load(os.path.join(dataPath, 'Lm4to1Y.npy'))
+        LMY = np.load(os.path.join(dataPath, 'Lm16to1Y.npy'))
         xTrain, xTest, posYTrain, posYTest, lmYTrain, lmYTest = train_test_split(X, POSY, LMY)
         
     else:
@@ -108,8 +108,7 @@ def main():
         elif modelType == "--POSLM":
             posYTrain = tf.keras.utils.to_categorical(posYTrain, POS_space_length)
             posYTest = tf.keras.utils.to_categorical(posYTest, POS_space_length)
-            model.train(xTrain, posYTrain, lmYTrain, xTest, posYTest, lmYTest)
-            model.saveCheckpoint(checkpointPath)
+            model.train(xTrain, posYTrain, lmYTrain, xTest, posYTest, lmYTest, checkpointPath)
             
 
 
