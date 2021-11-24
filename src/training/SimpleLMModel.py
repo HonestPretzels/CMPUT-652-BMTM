@@ -4,6 +4,8 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, InputLayer, Bidirectional,  TimeDistributed, Embedding, Activation
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.grid_search import GridSearchCV
+from sklearn.cross_validation import StratifiedKFold
+from sklearn.cross_validation import cross_val_score
 
 class LM_Model:
 
@@ -15,6 +17,7 @@ class LM_Model:
         self.learning_rate = np.array([0.001, 0.01, 0.05, 0.1])
         self.batch_size = np.array([20, 40, 60, 80]) # Lan et al. used 20 for PTB data set
         self.epochs = np.array([50, 100, 250, 500]) # Lan et al. used 500 epochs for PTB data set
+        self.hidden_nodes = np.array([128, 300])
         self.validation_split = 0.2
         self.sentence_max = sentence_max_length
         self.word_space = word_space_length
@@ -28,9 +31,9 @@ class LM_Model:
         self.model.add(InputLayer((self.sentence_max,)))
         self.model.add(Embedding(self.word_space, 64))  # Is 64 only for PTB?
 
-        self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
-        self.model.add(Bidirectional(LSTM(128, return_sequences=True)))
-        self.model.add(Bidirectional(LSTM(128)))
+        self.model.add(Bidirectional(LSTM(self.hidden_nodes, return_sequences=True)))
+        self.model.add(Bidirectional(LSTM(self.hidden_nodes, return_sequences=True)))
+        self.model.add(Bidirectional(LSTM(self.hidden_nodes)))
 
         # TODO: ensure vocab_length is imported into this file
         self.model.add(Dense(self.word_space, activation='softmax'))
@@ -49,10 +52,10 @@ class LM_Model:
                 continue
 
     # only added gridsearch for this model - if works well, then we can use it for poslm             
-    def gridSearch(self):
+    def gridSearchCV(self, trainX, trainY):
         start = time()
         model = KerasClassifier(build_fn = self.initModel)
-        param_grid = dict(self.learning_rate, nb_epoch = self.epochs, batch_size = self.batches)
+        param_grid = dict(learning_rates = self.learning_rate, nb_epoch = self.epochs, batch_size = self.batch_size, n_hidden = self.hidden_nodes)
         grid = GridSearchCV(estimator=model, param_grid=param_grid)
         grid_result = grid.fit(trainX, trainY)
         print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
