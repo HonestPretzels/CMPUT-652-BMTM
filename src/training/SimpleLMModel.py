@@ -4,8 +4,6 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, InputLayer, Bidirectional,  TimeDistributed, Embedding, Activation
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.grid_search import GridSearchCV
-from sklearn.cross_validation import StratifiedKFold
-from sklearn.cross_validation import cross_val_score
 
 class LM_Model:
 
@@ -56,12 +54,13 @@ class LM_Model:
         start = time()
         model = KerasClassifier(build_fn = self.initModel)
         param_grid = dict(learning_rates = self.learning_rate, nb_epoch = self.epochs, batch_size = self.batch_size, n_hidden = self.hidden_nodes)
-        grid = GridSearchCV(estimator=model, param_grid=param_grid)
+        grid = GridSearchCV(estimator=model, param_grid=param_grid, scoring='accuracy') # default is 3-fold CV
         grid_result = grid.fit(trainX, trainY)
         print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
         for params, mean_score, scores in grid_result.grid_scores_:
             print("LM mean: %f and std: (%f) with: %r" % (scores.mean(), scores.std(), params))
         print("total time for LM:", time()-start)
+        
                 
     def loadCheckpoint(self, checkpoint):
         print('Loading Checkpoint: %s'%checkpoint)
