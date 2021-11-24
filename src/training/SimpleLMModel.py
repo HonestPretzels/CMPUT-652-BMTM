@@ -60,7 +60,7 @@ class LM_Model:
         for params, mean_score, scores in grid_result.grid_scores_:
             print("LM mean: %f and std: (%f) with: %r" % (scores.mean(), scores.std(), params))
         print("total time for LM:", time()-start)
-        
+        return grid
                 
     def loadCheckpoint(self, checkpoint):
         print('Loading Checkpoint: %s'%checkpoint)
@@ -72,6 +72,9 @@ class LM_Model:
     def train(self, trainX, trainY, testX, testY):
         self.model.fit(trainX, trainY, batch_size=self.batch_size, epochs=self.epochs,
                        validation_data=(testX, testY))
+        
+        # now that we have gridsearch, we need to use the best parameters to for fitting
+        #grid = grid.fit(trainX, trainY)
     
     def test(self, testX, testY):
         self.model.evaluate(testX, testY, batch_size=self.batch_size)
