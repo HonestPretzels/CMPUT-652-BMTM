@@ -16,7 +16,7 @@ class POSLM_Model:
         self.loss = 'categorical_crossentropy'
         self.learning_rate = 0.001
         self.batch_size = 50
-        self.epochs = 50
+        self.epochs = 70
         self.validation_split = 0.2
         self.sentence_max = sentence_max_length
         self.POS_space = POS_space_length
@@ -64,7 +64,7 @@ class POSLM_Model:
 
     def loadCheckpoint(self, checkpoint):
         print('Loading Checkpoint: %s' % checkpoint)
-        self.model = load_model(checkpoint)
+        self.model.load_weights(checkpoint)
 
     def saveCheckpoint(self, checkpoint):
         self.model.save(checkpoint)
