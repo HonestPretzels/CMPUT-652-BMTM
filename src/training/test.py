@@ -1,22 +1,20 @@
-from train import getModel, getPOSDataSet, to_categorical
-from consts import POS_space_length
+from train import getModel
+import numpy as np
+import os
 import sys
 
 def main():
     dataPath = sys.argv[1]
     checkpointPath = sys.argv[2]
-    modelType = sys.argv[3]
-    wordPath = sys.argv[4]
-    posPath = sys.argv[5]
-    pass
-
-    xTest, yTest, _, _ = getPOSDataSet(dataPath, wordPath, posPath)
+    output = sys.argv[3]
+    modelType = sys.argv[4]
 
     model = getModel(modelType)
-    hyp_dict = {"batch_size": 48, "oogaBooga":"ahhhhhh"}
-    model.loadHyperParameters(hyp_dict)
-    # model.loadCheckpoint(checkpointPath)
-    # model.test(xTest, to_categorical(yTest, POS_space_length))
+    model.goToHiddenRep()
+    model.loadCheckpoint(checkpointPath)
+    X = np.load(dataPath)
+    hiddenReps = model.predict(X)
+    np.save(output, hiddenReps)
 
 if __name__ == "__main__":
     main()

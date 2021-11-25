@@ -17,10 +17,15 @@ def vectorize(sequence, vocabulary, maxLen):
     vector space
     '''
     intSequences = []
-    print(vocabulary[0])
     
     for i in range(len(sequence)):
-        intSequences.append([vocabulary.index(item) for item in sequence[i]])
+        current = []
+        for item in sequence[i]:
+            if item in vocabulary:
+                current.append(vocabulary.index(item))
+            else:
+                current.append(0)
+        intSequences.append(current)
     return pad_sequences(intSequences, maxlen=maxLen, padding="post")
 
 def main():

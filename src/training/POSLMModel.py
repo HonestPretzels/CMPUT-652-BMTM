@@ -28,9 +28,7 @@ class POSLM_Model:
     def initModel(self):
         input_layer = Input((self.sentence_max,))
         aux_model, aux_layer = self.posHiddenRep(input_layer)
-        lm_model = self.lmHiddenRep(input_layer,aux_layer)
-        print(aux_model)
-        print(lm_model)
+        lm_model, _ = self.lmHiddenRep(input_layer,aux_layer)
         self.model = Model(inputs=input_layer, outputs=[aux_model,lm_model], name="POSLM_Model")
         losses = {
             "posModel": "categorical_crossentropy",
@@ -55,11 +53,11 @@ class POSLM_Model:
         lm_model = Concatenate(axis=2)([lm_model, aux_layer])
         lm_model = Bidirectional(LSTM(128, dropout=self.lstm_dropout, return_sequences=True))(lm_model)
         lm_model = Bidirectional(LSTM(128, dropout=self.lstm_dropout, return_sequences=True))(lm_model)
-        lm_model = Bidirectional(LSTM(128, dropout=self.lstm_dropout))(lm_model)
-        lm_model = Dense(self.word_space)(lm_model)
+        hiddenRep = Bidirectional(LSTM(128, dropout=self.lstm_dropout))(lm_model)
+        lm_model = Dense(self.word_space)(hiddenRep)
         lm_model = Activation('softmax', name="lmModel")(lm_model)
        
-        return lm_model
+        return lm_model, hiddenRep
 
 
     def loadCheckpoint(self, checkpoint):
@@ -85,3 +83,14 @@ class POSLM_Model:
 
     def test(self, testX, testY):
         self.model.evaluate(testX, testY, batch_size=self.batch_size)
+    
+    def predict(self, X):
+        return self.model.predict(X, batch_size=self.batch_size)
+
+    def goToHiddenRep(self):
+        input_layer = Input((self.sentence_max,))
+        aux_model, aux_layer = self.posHiddenRep(input_layer)
+        _, hiddenRep = self.lmHiddenRep(input_layer,aux_layer)
+        self.model = Model(inputs=input_layer, outputs=[hiddenRep], name="POSLM_Model")
+        self.model.compile(optimizer=self.optimizer, metrics=["accuracy"])
+        self.model.summary()
