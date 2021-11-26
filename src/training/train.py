@@ -59,8 +59,8 @@ def main():
 
     elif modelType == "--LM":
         print("Simple Language Model Selected")
-        X = np.load(os.path.join(dataPath, 'Lm4to1X.npy'))
-        Y = np.load(os.path.join(dataPath, 'Lm4to1Y.npy'))
+        X = np.load(os.path.join(dataPath, 'Lm16to1X.npy'))
+        Y = np.load(os.path.join(dataPath, 'Lm16to1Y.npy'))
         xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
 
     elif modelType == "--POSLM":

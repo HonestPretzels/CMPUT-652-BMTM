@@ -16,7 +16,7 @@ class POSLM_Model:
         self.loss = 'categorical_crossentropy'
         self.learning_rate = 0.001
         self.batch_size = 50
-        self.epochs = 70
+        self.epochs = 90
         self.validation_split = 0.2
         self.sentence_max = sentence_max_length
         self.POS_space = POS_space_length

@@ -14,6 +14,7 @@ def main():
     model.loadCheckpoint(checkpointPath)
     X = np.load(dataPath)
     hiddenReps = model.predict(X)
+    print(hiddenReps.shape)
     np.save(output, hiddenReps)
 
 if __name__ == "__main__":

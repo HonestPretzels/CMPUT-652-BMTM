@@ -26,7 +26,6 @@ def main():
         model.fit(trainX, currTrainY)
         score = model.score(testX, currTestY)
         scores[i] = score
-    print()
     np.save(resultsPath, scores)
 
 if __name__ == "__main__":

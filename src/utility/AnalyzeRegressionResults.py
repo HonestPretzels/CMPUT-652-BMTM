@@ -11,7 +11,7 @@ def main():
         if s == 1.0:
             count += 1
         
-    print(max(scores), min(scores), np.mean(scores), np.median(scores), count)
+    print(scores.shape, max(scores), min(scores), np.mean(scores), np.median(scores), count)
     
 if __name__ == "__main__":
     main()

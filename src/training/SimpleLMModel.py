@@ -1,4 +1,5 @@
 # TODO: identify the vocab length, add it into the consts script, then here
+import keras
 from consts import word_space_length, sentence_max_length # , vocab_length
 import numpy as np
 import time
@@ -14,10 +15,14 @@ class LM_Model:
     def __init__(self):
         self.optimizer = "Adam"
         self.loss = 'sparse_categorical_crossentropy'
-        self.learning_rate = np.array([0.001, 0.01, 0.05, 0.1])
-        self.batch_size = np.array([20, 40, 60, 80]) # Lan et al. used 20 for PTB data set
+        # self.learning_rate = np.array([0.001, 0.01, 0.05, 0.1])
+        # self.batch_size = np.array([20, 40, 60, 80]) # Lan et al. used 20 for PTB data set
         # self.epochs = np.array([50, 100, 250, 500]) # Lan et al. used 500 epochs for PTB data set
-        self.hidden_nodes = np.array([128, 300])
+        # self.hidden_nodes = np.array([128, 300])
+        self.batch_size = 50
+        self.learning_rate = 0.001
+        self.batch_size = 50
+        self.epochs = 90
         self.validation_split = 0.2
         self.sentence_max = sentence_max_length
         self.word_space = word_space_length
@@ -25,20 +30,23 @@ class LM_Model:
 
         self.initModel()
 
-    def initModel(self, n_hidden=128):
-        self.model = Sequential()
-        self.model.add(InputLayer((self.sentence_max,)))
-        self.model.add(Embedding(self.word_space, 64))  # Is 64 only for PTB?
+    def getModel(self, n_hidden=128):
+        model = Sequential()
+        model.add(InputLayer((self.sentence_max,)))
+        model.add(Embedding(self.word_space, 64))  # Is 64 only for PTB?
 
-        self.model.add(Bidirectional(LSTM(n_hidden, return_sequences=True)))
-        self.model.add(Bidirectional(LSTM(n_hidden, return_sequences=True)))
-        self.model.add(Bidirectional(LSTM(n_hidden)))
+        model.add(Bidirectional(LSTM(n_hidden, return_sequences=True)))
+        model.add(Bidirectional(LSTM(n_hidden, return_sequences=True)))
+        model.add(Bidirectional(LSTM(n_hidden)))
 
         # TODO: ensure vocab_length is imported into this file
-        self.model.add(Dense(self.word_space, activation='softmax'))
+        model.add(Dense(self.word_space, activation='softmax'))
+        return model
+        
 
-        # TODO: Add the perplexity metric - should we do this using a package or write the fcn. ourselves?
-        # using accuracy as metric as a placeholder so that the code runs
+    def initModel(self):
+        self.model = self.getModel()
+
         self.model.compile(loss=self.loss, optimizer=self.optimizer, metrics=['accuracy'])
         self.model.summary()
         return self.model
@@ -67,7 +75,8 @@ class LM_Model:
                 
     def loadCheckpoint(self, checkpoint):
         print('Loading Checkpoint: %s'%checkpoint)
-        self.model = load_model(checkpoint)
+        self.model.load_weights(checkpoint)
+
 
     def saveCheckpoint(self, checkpoint):
         self.model.save(checkpoint)
@@ -83,3 +92,13 @@ class LM_Model:
     def test(self, testX, testY):
         self.model.evaluate(testX, testY, batch_size=self.batch_size)
         # TODO: Fix metrics to show more than just accuracy
+        
+    def predict(self, X):
+        return self.model.predict(X, batch_size=self.batch_size)
+
+    def goToHiddenRep(self):
+        m = self.getModel()
+        extractor = keras.Model(inputs = m.inputs, outputs=[m.layers[3].output])
+        self.model = extractor
+        self.model.compile(optimizer=self.optimizer, metrics=["accuracy"])
+        self.model.summary()
