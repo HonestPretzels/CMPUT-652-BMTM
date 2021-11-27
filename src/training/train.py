@@ -99,7 +99,7 @@ def main():
         tuneHyperParameters(model, xTrain, yTrain, hyperParameterPath, 5)
     else:
         if modelType == "--POS":
-            model.train(xTrain, tf.keras.utils.to_categorical(yTrain, POS_space_length))
+            model.train(xTrain, tf.keras.utils.to_categorical(yTrain, POS_space_length), checkpointPath)
             model.saveCheckpoint(checkpointPath)
         elif modelType == "--LM":
             # TODO: Reshape this

@@ -14,6 +14,7 @@ def main():
     model.loadCheckpoint(checkpointPath)
     X = np.load(dataPath)
     hiddenReps = model.predict(X)
+    hiddenReps = hiddenReps.reshape((hiddenReps.shape[0], hiddenReps.shape[1]*hiddenReps.shape[2]))
     print(hiddenReps.shape)
     np.save(output, hiddenReps)
 
