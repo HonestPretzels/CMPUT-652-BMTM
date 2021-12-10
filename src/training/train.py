@@ -2,14 +2,13 @@ import sys
 import os
 from SimplePOSModel import POS_Model
 from SimpleLMModel import LM_Model
+from FCLMModel import FC_LM_Model
+from FCPOSModel import FC_POS_Model
 from POSLMModel import POSLM_Model
 from consts import POS_space_length
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import numpy as np
-import csv
-import json
-import re
 # If you get an error that models are not included, run this script from the training directory
 
 def getModel(modelType):
@@ -20,6 +19,10 @@ def getModel(modelType):
         return POSLM_Model()
     elif modelType == '--LM':
         return LM_Model()
+    elif modelType == "--POSFC":
+        return FC_POS_Model()
+    elif modelType == "--LMFC":
+        return FC_LM_Model()
     else:
         return POS_Model()
 
@@ -42,15 +45,15 @@ def main():
     dataPath = sys.argv[1]
     checkpointPath = sys.argv[2]
     modelType = sys.argv[3]
-    if modelType == "--POS":
-        print("Simple POS Model Selected")
+    if modelType == "--POS" or modelType == "--POSFC":
+        print("POS Model Selected")
         #TODO: Enable cross validation splits
         X = np.load(os.path.join(dataPath, 'PosX.npy'))
         Y = np.load(os.path.join(dataPath, 'PosY.npy'))
         xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
 
-    elif modelType == "--LM":
-        print("Simple Language Model Selected")
+    elif modelType == "--LM" or modelType == "--LMFC":
+        print("Language Model Selected")
         X = np.load(os.path.join(dataPath, 'Lm16to1X.npy'))
         Y = np.load(os.path.join(dataPath, 'Lm16to1Y.npy'))
         xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
@@ -96,12 +99,14 @@ def main():
                 os.mkdir(checkpointPathHP)
                 model.train(xTrain, posYTrain, lmYTrain, xTest, posYTest, lmYTest, checkpointPathHP)
     else:
-        if modelType == "--POS":
-            model.train(xTrain, tf.keras.utils.to_categorical(yTrain, POS_space_length), checkpointPath)
+        if modelType == "--POS" or modelType == "--POSFC":
+            posYTrain = tf.keras.utils.to_categorical(yTrain, POS_space_length)
+            posYTest = tf.keras.utils.to_categorical(yTest, POS_space_length)
+            model.train(xTrain, posYTrain, xTest, posYTest, checkpointPath)
             model.saveCheckpoint(checkpointPath)
-        elif modelType == "--LM":
+        elif modelType == "--LM" or modelType == "--LMFC":
             # TODO: Reshape this
-            model.train(xTrain, yTrain, xTest, yTest)
+            model.train(xTrain, yTrain, xTest, yTest, checkpointPath)
             model.saveCheckpoint(checkpointPath)
         elif modelType == "--POSLM":
             posYTrain = tf.keras.utils.to_categorical(posYTrain, POS_space_length)

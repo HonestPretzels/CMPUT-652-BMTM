@@ -1,16 +1,16 @@
 # TODO: identify the vocab length, add it into the consts script, then here
-from consts import word_space_length, sentence_max_length # , vocab_length
+from consts import POS_space_length, sentence_max_length # , vocab_length
+from keras.models import Sequential
 import tensorflow as tf
-from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM, InputLayer, Bidirectional, Embedding
+from keras.layers import Dense, InputLayer, Embedding
 
-class LM_Model:
+class FC_POS_Model:
 
     model = None
 
     def __init__(self):
         self.optimizer = "Adam"
-        self.loss = 'sparse_categorical_crossentropy'
+        self.loss = 'categorical_crossentropy'
         # self.learning_rate = np.array([0.001, 0.01, 0.05, 0.1])
         # self.batch_size = np.array([20, 40, 60, 80]) # Lan et al. used 20 for PTB data set
         # self.epochs = np.array([50, 100, 250, 500]) # Lan et al. used 500 epochs for PTB data set
@@ -21,19 +21,16 @@ class LM_Model:
         self.epochs = 90
         self.validation_split = 0.2
         self.sentence_max = sentence_max_length
-        self.word_space = word_space_length
+        self.word_space = POS_space_length
         self.lstm_dropout = 0.8
 
         self.initModel()
 
-    def getModel(self, n_hidden=128):
+    def getModel(self):
         model = Sequential()
         model.add(InputLayer((self.sentence_max,)))
         model.add(Embedding(self.word_space, 64))  # Is 64 only for PTB?
-
-        model.add(Bidirectional(LSTM(n_hidden, return_sequences=True)))
-        model.add(Bidirectional(LSTM(n_hidden, return_sequences=True)))
-        model.add(Bidirectional(LSTM(n_hidden)))
+        model.add(Dense(256, activation="relu"))
 
         # TODO: ensure vocab_length is imported into this file
         model.add(Dense(self.word_space, activation='softmax'))

@@ -55,7 +55,7 @@ class POS_Model:
     def saveCheckpoint(self, checkpoint):
         self.model.save(checkpoint)
 
-    def train(self, trainX, trainY, checkpointPath):
+    def train(self, trainX, trainY, testX, testY, checkpointPath):
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpointPath,
             save_weights_only=True,
@@ -64,7 +64,7 @@ class POS_Model:
             save_best_only=True)
         
         self.model.fit(trainX, trainY, batch_size=self.batch_size,
-                       epochs=self.epochs, validation_split=self.validation_split,
+                       epochs=self.epochs, validation_data=(testX, testY),
                        callbacks=[model_checkpoint_callback])
     
     def test(self, testX, testY):

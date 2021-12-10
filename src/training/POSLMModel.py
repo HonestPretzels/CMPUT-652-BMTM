@@ -1,7 +1,7 @@
 from consts import word_space_length, POS_space_length, sentence_max_length
 import tensorflow as tf
-from keras.models import Model, Sequential, load_model
-from keras.layers import Dense, LSTM, InputLayer, Bidirectional, \
+from keras.models import Model
+from keras.layers import Dense, LSTM, Bidirectional, \
     TimeDistributed, Embedding, Activation, Concatenate, Input
 
 
@@ -84,7 +84,7 @@ class POSLM_Model:
         
         self.model.fit(x=trainX, 
                         y={"posModel":trainYPOS, "lmModel":trainYLM}, 
-                        batch_size=self.batch_size, epochs=self.epochs, verbose=2,
+                        batch_size=self.batch_size, epochs=self.epochs, verbose=1,
                         validation_data=(testX, {"posModel":testYPOS, "lmModel":testYLM}),
                         callbacks=[model_checkpoint_callback])
 
@@ -93,11 +93,3 @@ class POSLM_Model:
     
     def predict(self, X):
         return self.model.predict(X, batch_size=self.batch_size)
-
-    def goToHiddenRep(self):
-        input_layer = Input((self.sentence_max,))
-        aux_model, aux_layer = self.posHiddenRep(input_layer)
-        _, hiddenRep = self.lmHiddenRep(input_layer,aux_layer)
-        self.model = Model(inputs=input_layer, outputs=[hiddenRep], name="POSLM_Model")
-        self.model.compile(optimizer=self.optimizer, metrics=["accuracy"])
-        self.model.summary()

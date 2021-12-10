@@ -1,10 +1,10 @@
 # TODO: identify the vocab length, add it into the consts script, then here
 from consts import word_space_length, sentence_max_length # , vocab_length
+from keras.models import Sequential
 import tensorflow as tf
-from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM, InputLayer, Bidirectional, Embedding
+from keras.layers import Dense, InputLayer, Embedding, Flatten
 
-class LM_Model:
+class FC_LM_Model:
 
     model = None
 
@@ -26,16 +26,13 @@ class LM_Model:
 
         self.initModel()
 
-    def getModel(self, n_hidden=128):
+    def getModel(self):
         model = Sequential()
         model.add(InputLayer((self.sentence_max,)))
         model.add(Embedding(self.word_space, 64))  # Is 64 only for PTB?
+        model.add(Flatten())
+        model.add(Dense(256, activation="relu"))
 
-        model.add(Bidirectional(LSTM(n_hidden, return_sequences=True)))
-        model.add(Bidirectional(LSTM(n_hidden, return_sequences=True)))
-        model.add(Bidirectional(LSTM(n_hidden)))
-
-        # TODO: ensure vocab_length is imported into this file
         model.add(Dense(self.word_space, activation='softmax'))
         return model
         
