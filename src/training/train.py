@@ -29,14 +29,6 @@ def tuneHyperParameters(model, trainX, trainY):
     '''
     pass
 
-def setHyperParameters(model, configPath):
-    '''
-    Set the hyper parameters of the model
-    '''
-    with open(configPath, 'r') as f:
-        configDict = json.loads(f)
-        model.loadHyperParameters(configDict)
-
 def main():
     '''
     Called with command line arguments:
@@ -82,21 +74,27 @@ def main():
     else:
         os.mkdir(checkpointPath)
 
-    if len(sys.argv) > 4:
-        hyperParameterPath = sys.argv[4]
-        setHyperParameters(model, hyperParameterPath)
-        print("Hyper Parameters set based on %s"%hyperParameterPath)
 
     doTune = False
-    if len(sys.argv) > 5:
-        doTune = (sys.argv[5] == "--Tune")
+    if len(sys.argv) > 4:
+        doTune = (sys.argv[4] == "--Tune")
         if doTune:
             print("Hyper Parameter Tuning Enabled")
     
 
     if doTune:
         # Set to 5 epochs to allow for quick grid search, do 5 epochs per hyperParameter set
-        tuneHyperParameters(model, xTrain, yTrain, hyperParameterPath, 5)
+        posYTrain = tf.keras.utils.to_categorical(posYTrain, POS_space_length)
+        posYTest = tf.keras.utils.to_categorical(posYTest, POS_space_length)
+        batchSizes = [1000]
+        learningRates = [0.1,0.01]
+        for b in batchSizes:
+            for l in learningRates:
+                print("Batch Size:", b, "Learning Rate:", l)
+                model.set_hyper_parameters(b, l, 5)
+                checkpointPathHP = os.path.join(checkpointPath, 'HyperParamaters_b_%d_lr_%f'%(b,l))
+                os.mkdir(checkpointPathHP)
+                model.train(xTrain, posYTrain, lmYTrain, xTest, posYTest, lmYTest, checkpointPathHP)
     else:
         if modelType == "--POS":
             model.train(xTrain, tf.keras.utils.to_categorical(yTrain, POS_space_length), checkpointPath)

@@ -12,9 +12,9 @@ class POSLM_Model:
     model = None
 
     def __init__(self):
-        self.optimizer = 'Adam'
-        self.loss = 'categorical_crossentropy'
         self.learning_rate = 0.001
+        self.loss = 'categorical_crossentropy'
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
         self.batch_size = 50
         self.epochs = 90
         self.validation_split = 0.2
@@ -67,6 +67,13 @@ class POSLM_Model:
     def saveCheckpoint(self, checkpoint):
         self.model.save(checkpoint)
 
+    def set_hyper_parameters(self, batchSize, learningRate, epochs):
+        self.batch_size = batchSize
+        self.learning_rate = learningRate
+        self.epochs = epochs
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        self.initModel()
+
     def train(self, trainX, trainYPOS, trainYLM, testX, testYPOS, testYLM, checkpointPath):
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpointPath,
@@ -77,7 +84,7 @@ class POSLM_Model:
         
         self.model.fit(x=trainX, 
                         y={"posModel":trainYPOS, "lmModel":trainYLM}, 
-                        batch_size=self.batch_size, epochs=self.epochs, verbose=1,
+                        batch_size=self.batch_size, epochs=self.epochs, verbose=2,
                         validation_data=(testX, {"posModel":testYPOS, "lmModel":testYLM}),
                         callbacks=[model_checkpoint_callback])
 
