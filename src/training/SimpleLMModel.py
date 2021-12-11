@@ -1,5 +1,4 @@
-# TODO: identify the vocab length, add it into the consts script, then here
-from consts import word_space_length, sentence_max_length # , vocab_length
+from consts import word_space_length, sentence_max_length
 import tensorflow as tf
 from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, InputLayer, Bidirectional, Embedding
@@ -11,10 +10,6 @@ class LM_Model:
     def __init__(self):
         self.optimizer = "Adam"
         self.loss = 'sparse_categorical_crossentropy'
-        # self.learning_rate = np.array([0.001, 0.01, 0.05, 0.1])
-        # self.batch_size = np.array([20, 40, 60, 80]) # Lan et al. used 20 for PTB data set
-        # self.epochs = np.array([50, 100, 250, 500]) # Lan et al. used 500 epochs for PTB data set
-        # self.hidden_nodes = np.array([128, 300])
         self.batch_size = 50
         self.learning_rate = 0.001
         self.batch_size = 50

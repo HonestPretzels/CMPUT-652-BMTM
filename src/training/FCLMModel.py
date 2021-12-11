@@ -1,5 +1,4 @@
-# TODO: identify the vocab length, add it into the consts script, then here
-from consts import word_space_length, sentence_max_length # , vocab_length
+from consts import word_space_length, sentence_max_length
 from keras.models import Sequential
 import tensorflow as tf
 from keras.layers import Dense, InputLayer, Embedding, Flatten
