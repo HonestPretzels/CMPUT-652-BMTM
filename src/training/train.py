@@ -26,11 +26,6 @@ def getModel(modelType):
     else:
         return POS_Model()
 
-def tuneHyperParameters(model, trainX, trainY):
-    '''
-    Do some form of hyper parameter tuning here and output a JSON to the outputPath
-    '''
-    pass
 
 def main():
     '''
@@ -48,22 +43,22 @@ def main():
     if modelType == "--POS" or modelType == "--POSFC":
         print("POS Model Selected")
         #TODO: Enable cross validation splits
-        X = np.load(os.path.join(dataPath, 'PosX.npy'))
-        Y = np.load(os.path.join(dataPath, 'PosY.npy'))
-        xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
+        X = np.load(os.path.join(dataPath, 'PosX_train.npy'))
+        Y = np.load(os.path.join(dataPath, 'PosY_train.npy'))
+        xTrain, xVal, yTrain, yVal = train_test_split(X, Y)
 
     elif modelType == "--LM" or modelType == "--LMFC":
         print("Language Model Selected")
-        X = np.load(os.path.join(dataPath, 'Lm16to1X.npy'))
-        Y = np.load(os.path.join(dataPath, 'Lm16to1Y.npy'))
-        xTrain,xTest, yTrain, yTest = train_test_split(X, Y)
+        X = np.load(os.path.join(dataPath, 'Lm16to1X_train.npy'))
+        Y = np.load(os.path.join(dataPath, 'Lm16to1Y_train.npy'))
+        xTrain, xVal, yTrain, yVal = train_test_split(X, Y)
 
     elif modelType == "--POSLM":
         print("POS + LM Model Selected")
-        X = np.load(os.path.join(dataPath, 'Lm16to1X.npy'))
-        POSY = np.load(os.path.join(dataPath, 'PosY.npy'))
-        LMY = np.load(os.path.join(dataPath, 'Lm16to1Y.npy'))
-        xTrain, xTest, posYTrain, posYTest, lmYTrain, lmYTest = train_test_split(X, POSY, LMY)
+        X = np.load(os.path.join(dataPath, 'Lm16to1X_train.npy'))
+        POSY = np.load(os.path.join(dataPath, 'PosY_train.npy'))
+        LMY = np.load(os.path.join(dataPath, 'Lm16to1Y_train.npy'))
+        xTrain, xVal, posYTrain, posYVal, lmYTrain, lmYVal = train_test_split(X, POSY, LMY)
         
     else:
         print("ERROR: Please Select a Valid Model Type")
@@ -71,12 +66,6 @@ def main():
 
 
     model = getModel(modelType)
-    if os.path.isdir(checkpointPath):
-        if bool(os.listdir(checkpointPath)):
-            model.loadCheckpoint(checkpointPath)
-    else:
-        os.mkdir(checkpointPath)
-
 
     doTune = False
     if len(sys.argv) > 4:
@@ -87,31 +76,43 @@ def main():
 
     if doTune:
         # Set to 5 epochs to allow for quick grid search, do 5 epochs per hyperParameter set
-        posYTrain = tf.keras.utils.to_categorical(posYTrain, POS_space_length)
-        posYTest = tf.keras.utils.to_categorical(posYTest, POS_space_length)
-        batchSizes = [1000]
-        learningRates = [0.1,0.01]
+        batchSizes = [50,100,1000]
+        learningRates = [0.1,0.01, 0.001]
         for b in batchSizes:
             for l in learningRates:
                 print("Batch Size:", b, "Learning Rate:", l)
-                model.set_hyper_parameters(b, l, 5)
-                checkpointPathHP = os.path.join(checkpointPath, 'HyperParamaters_b_%d_lr_%f'%(b,l))
-                os.mkdir(checkpointPathHP)
-                model.train(xTrain, posYTrain, lmYTrain, xTest, posYTest, lmYTest, checkpointPathHP)
-    else:
+                model.loadHyperParameters({'batch_size':b, 'learning_rate': l, 'epochs': 5})
+                model.initModel()
+                checkpointPath = os.path.join(checkpointPath, 'HyperParamaters_b_%d_lr_%d'%(b,learningRates.index(l)))
+                if not os.path.isdir(checkpointPath):
+                    os.mkdir(checkpointPath)
+                if modelType == "--POS" or modelType == "--POSFC":
+                    posYTrain = tf.keras.utils.to_categorical(yTrain, POS_space_length)
+                    posYVal = tf.keras.utils.to_categorical(yVal, POS_space_length)
+                    model.train(xTrain, posYTrain, xVal, posYVal, checkpointPath)
+                    model.saveCheckpoint(checkpointPath)
+                elif modelType == "--LM" or modelType == "--LMFC":
+                    # TODO: Reshape this
+                    model.train(xTrain, yTrain, xVal, yVal, checkpointPath)
+                    model.saveCheckpoint(checkpointPath)
+                elif modelType == "--POSLM":
+                    posYTrain = tf.keras.utils.to_categorical(posYTrain, POS_space_length)
+                    posYVal = tf.keras.utils.to_categorical(posYVal, POS_space_length)
+                    model.train(xTrain, posYTrain, lmYTrain, xVal, posYVal, lmYVal, checkpointPath)
+    else:           
         if modelType == "--POS" or modelType == "--POSFC":
             posYTrain = tf.keras.utils.to_categorical(yTrain, POS_space_length)
-            posYTest = tf.keras.utils.to_categorical(yTest, POS_space_length)
-            model.train(xTrain, posYTrain, xTest, posYTest, checkpointPath)
+            posYVal = tf.keras.utils.to_categorical(yVal, POS_space_length)
+            model.train(xTrain, posYTrain, xVal, posYVal, checkpointPath)
             model.saveCheckpoint(checkpointPath)
         elif modelType == "--LM" or modelType == "--LMFC":
             # TODO: Reshape this
-            model.train(xTrain, yTrain, xTest, yTest, checkpointPath)
+            model.train(xTrain, yTrain, xVal, yVal, checkpointPath)
             model.saveCheckpoint(checkpointPath)
         elif modelType == "--POSLM":
             posYTrain = tf.keras.utils.to_categorical(posYTrain, POS_space_length)
-            posYTest = tf.keras.utils.to_categorical(posYTest, POS_space_length)
-            model.train(xTrain, posYTrain, lmYTrain, xTest, posYTest, lmYTest, checkpointPath)
+            posYVal = tf.keras.utils.to_categorical(posYVal, POS_space_length)
+            model.train(xTrain, posYTrain, lmYTrain, xVal, posYVal, lmYVal, checkpointPath)
             
 
 

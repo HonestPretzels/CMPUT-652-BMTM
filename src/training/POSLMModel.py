@@ -67,12 +67,15 @@ class POSLM_Model:
     def saveCheckpoint(self, checkpoint):
         self.model.save(checkpoint)
 
-    def set_hyper_parameters(self, batchSize, learningRate, epochs):
-        self.batch_size = batchSize
-        self.learning_rate = learningRate
-        self.epochs = epochs
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-        self.initModel()
+    def loadHyperParameters(self, config_dict):
+        for key in config_dict:
+            try:
+                getattr(self, key)
+                setattr(self, key, config_dict[key])
+                if key == "learning_rate":
+                    self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            except:
+                continue
 
     def train(self, trainX, trainYPOS, trainYLM, testX, testYPOS, testYLM, checkpointPath):
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(

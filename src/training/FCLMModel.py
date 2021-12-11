@@ -11,10 +11,6 @@ class FC_LM_Model:
     def __init__(self):
         self.optimizer = "Adam"
         self.loss = 'sparse_categorical_crossentropy'
-        # self.learning_rate = np.array([0.001, 0.01, 0.05, 0.1])
-        # self.batch_size = np.array([20, 40, 60, 80]) # Lan et al. used 20 for PTB data set
-        # self.epochs = np.array([50, 100, 250, 500]) # Lan et al. used 500 epochs for PTB data set
-        # self.hidden_nodes = np.array([128, 300])
         self.batch_size = 50
         self.learning_rate = 0.001
         self.batch_size = 50
@@ -49,6 +45,8 @@ class FC_LM_Model:
             try:
                 getattr(self, key)
                 setattr(self, key, config_dict[key])
+                if key == "learning_rate":
+                    self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
             except:
                 continue
                 

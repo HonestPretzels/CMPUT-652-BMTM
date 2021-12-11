@@ -52,6 +52,8 @@ class LM_Model:
             try:
                 getattr(self, key)
                 setattr(self, key, config_dict[key])
+                if key == "learning_rate":
+                    self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
             except:
                 continue
                 

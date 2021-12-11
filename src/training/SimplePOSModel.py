@@ -45,6 +45,8 @@ class POS_Model:
             try:
                 getattr(self, key)
                 setattr(self, key, config_dict[key])
+                if key == "learning_rate":
+                    self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
             except:
                 continue
 
@@ -72,12 +74,4 @@ class POS_Model:
     
     def predict(self, X):
         return self.model.predict(X, batch_size=self.batch_size)
-
-    def goToHiddenRep(self):
-        m = self.getModel()
-        extractor = keras.Model(inputs = m.inputs, outputs=[m.layers[1].output])
-        self.model = extractor
-        self.model.compile(optimizer=self.optimizer, metrics=["accuracy"])
-        self.model.summary()
-
     
